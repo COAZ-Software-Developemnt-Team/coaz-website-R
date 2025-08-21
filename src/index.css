@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility no-scrollbar {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+@utility nonsticky {
+  /*don't apply bacdrop-filter direct to parent if you have fixed or absolute child elements,
+    this will break the positioning, instead use pseudo after or before and apply the dropfilter
+    to it*/
+  /* #menucontainer:before{
+    backdrop-filter: blur(20px);
+    content: "";
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+  } */
+
+  /*  #menus{
+    -webkit-box-shadow: 0 0 15px -3px rgb(0 0 0 / 0.1), 0 0 6px -4px rgb(0 0 0 / 0.1);
+    -moz-box-shadow: 0 0 15px -3px rgb(0 0 0 / 0.1), 0 0 6px -4px rgb(0 0 0 / 0.1);
+    box-shadow: 0 0 15px -3px rgb(0 0 0 / 0.1), 0 0 6px -4px rgb(0 0 0 / 0.1);
+  } */
+  position: absolute;
+}
+
+@utility sticky {
+  position: fixed;
+}
+
+@layer utilities {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+    --color-theme: rgb(27, 156, 227);
+    --color-heading: rgb(35, 62, 98);
+    --color-gray: rgb(128, 128, 128);
+
+    --gap: 1px;
+    --line-offset: 1px /* calc(var(--gap) / 2) */;
+    --line-thickness: 1px;
+    --line-color: rgb(242, 242, 242);
+  }
+
+  body {
+    margin: 0;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family:
+      source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  }
+}
+
+@layer utilities {
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 8px;
+}
+}
+
+@layer base {
+  @font-face {
+    font-family: 'NunitoSans-Black';
+    src: url("../public/fonts/NunitoSans-Black.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-BlackItalic';
+    src: url("../public/fonts/NunitoSans-BlackItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-Bold';
+    src: url("../public/fonts/NunitoSans-Bold.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-BoldItalic';
+    src: url("../public/fonts/NunitoSans-BoldItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-ExtraBold';
+    src: url("../public/fonts/NunitoSans-ExtraBold.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-ExtraBoldItalic';
+    src: url("../public/fonts/NunitoSans-ExtraBoldItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-ExtraLight';
+    src: url("../public/fonts/NunitoSans-ExtraLight.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-ExtraLightItalic';
+    src: url("../public/fonts/NunitoSans-ExtraLightItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-Italic';
+    src: url("../public/fonts/NunitoSans-Italic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-Light';
+    src: url("../public/fonts/NunitoSans-Light.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-LightItalic';
+    src: url("../public/fonts/NunitoSans-LightItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-Medium';
+    src: url("../public/fonts/NunitoSans-Medium.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-MediumItalic';
+    src: url("../public/fonts/NunitoSans-MediumItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-Regular';
+    src: url("../public/fonts/NunitoSans-Regular.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-SemiBold';
+    src: url("../public/fonts/NunitoSans-SemiBold.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSans-SemiBoldItalic';
+    src: url("../public/fonts/NunitoSans-SemiBoldItalic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSansExtraBlack-Italic';
+    src: url("../public/fonts/NunitoSansExtraBlack-Italic.ttf");
+  }
+  @font-face {
+    font-family: 'NunitoSansExtraBlack-Regular';
+    src: url("../public/fonts/NunitoSansExtraBlack-Regular.ttf");
+  }
+}
+
+.custom-shadow {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.1)
+}
+
+.custom-shadow-white {
+  box-shadow: 0 4px 8px 0 rgba(255, 255, 255, 0.2), 0 6px 20px 0 rgba(255, 255, 255, 0.2)
+}
+
+.feature {
+  height: 100%;
+  width: 100%;
+  background-color: rgb(240,249,253);
+  position: relative;
+  transition: background-color .5s ease-in-out
+}
+
+.feature.active {
+  background-color: var(--color-theme);
+}
+
+.feature:hover {
+  background-color: var(--color-theme)
+}
+.feature::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    content: '';
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 50px 50px 0;
+    border-color: transparent #fff transparent transparent;
+    box-sizing: border-box;
+}
+
+@property --num {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.number {
+  transition: --num 5s;
+  counter-reset: num var(--num);
+}
+.number:hover {
+  --num: 10000;
+}
+.number::after {
+  content: counter(num);
+}
+
+.grid-item::before, 
+.grid-item::after {
+   content: '';
+   position: absolute;
+   background-color: var(--line-color);
+   z-index: 1;
+}
+
+.grid-item::after {
+  inline-size: 100vw;
+  block-size: var(--line-thickness);
+  inset-inline-start: 0;
+  inset-block-start: calc(var(--line-offset) * -1);
+}
+
+.grid-item::before {
+  inline-size: var(--line-thickness);
+  block-size: 100vh;
+  inset-block-start: 0;
+  inset-inline-start: calc(var(--line-offset) * -1);
+}
+
