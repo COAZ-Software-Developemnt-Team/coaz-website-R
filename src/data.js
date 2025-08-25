@@ -982,7 +982,7 @@ export const membership = {
         },
         {
             name:'Student Membership',
-            link:'/membership/student_membership',
+            link:'/membership/student_membersip',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
