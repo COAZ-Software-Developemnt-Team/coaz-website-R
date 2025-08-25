@@ -982,7 +982,7 @@ export const membership = {
         },
         {
             name:'Student Membership',
-            link:'/membership/student_membersip',
+            link:'/membership/student_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
@@ -1332,10 +1332,10 @@ export const  events = [
     {
         image:'/images/img_21.jpg',
         date:'April 18, 2024',
-        title:'the vice president will be visiting our headquoter offices in lusaka',
+        title:'the vice president will be visiting our headquater offices in lusaka',
         start:'8:00 am',
         end:'10:00 am',
-        venue:'Coaz headquoters'
+        venue:'Coaz headquaters'
     },
     {
         image:'/images/img_41.jpg',
@@ -1343,7 +1343,7 @@ export const  events = [
         title:"Appointment of the association's president",
         start:'8:00 am',
         end:'10:00 am',
-        venue:'Coaz headquoters boardroom'
+        venue:'Coaz headquaters boardroom'
     },
     {
         image:'/images/img_39.jpg',
@@ -1351,7 +1351,7 @@ export const  events = [
         title:'welcoming of the new president',
         start:'10:00 am',
         end:'1:00 pm',
-        venue:'Coaz headquoters main hall'
+        venue:'Coaz headquaters main hall'
     }
 ]
 

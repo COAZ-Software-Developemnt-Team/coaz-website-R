@@ -8,10 +8,11 @@ const Membership = () => {
     const navigate = useNavigate();
     const path = useLocation().pathname;
     const [content,setContent] = useState(null);
-
-    if(mainElementRef.current) {
+useEffect(() => {
+    if(mainElementRef && mainElementRef.current) {
         mainElementRef.current.scrollTo({top: 0});
     }
+},[mainElementRef]);
     
     useEffect(() => { 
         let currentItem = findMenu(membership,path);

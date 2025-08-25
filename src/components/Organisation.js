@@ -12,10 +12,11 @@ const Organisation = () => {
   const [imgHeight,setImgHeight] = useState(0);
   const [content,setContent] = useState(null);
   const textRef = useRef(null);
-
-  if(mainElementRef.current) {
-      mainElementRef.current.scrollTo({top: 0});
-  }
+useEffect(() => {
+    if (mainElementRef && mainElementRef.current) {
+        mainElementRef.current.scrollTo({top: 0});
+    }
+}, [mainElementRef]);
 
   useEffect(() => {
     let currentItem = findMenu(organisation,path);

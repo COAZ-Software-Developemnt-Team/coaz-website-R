@@ -1,5 +1,5 @@
 import React from 'react'
-import {Logo} from '../CoazIcons';
+import {Logo} from '../components/CoazIcons';
 import { BsEnvelopeFill,BsFillTelephoneFill } from "react-icons/bs";
 import { IoLogoWhatsapp } from "react-icons/io";
 import { FaPaperPlane,FaFacebookF,FaLinkedinIn,FaInstagram } from "react-icons/fa";
@@ -16,7 +16,7 @@ const Footer = () => {
                 <p className='text-white text-lg font-leBeauneNew font-semibold'>Contacts</p>
                 <div className='flex flex-row space-x-4 text-[rgba(255,255,255,.8)]'>
                   <BsEnvelopeFill size={16} className='my-auto'/>
-                  <p className='my-auto text-sm tracking-wider font-jostBook'>coaz@info.com</p>
+                  <p className='my-auto text-sm tracking-wider font-jostBook'>info@coaz.com</p>
                 </div>
                 <div className='flex flex-row space-x-4 text-[rgba(255,255,255,.8)]'>
                   <BsFillTelephoneFill size={16} className='my-auto'/>
@@ -37,7 +37,7 @@ const Footer = () => {
               <p className='text-white text-lg font-leBeauneNew font-semibold'>Locations</p>
               <div className='flex flex-row space-x-4 text-[rgba(255,255,255,.8)]'>
                 <FaLocationDot size={16} className='my-auto shrink-0'/>
-                <p className='my-auto text-sm tracking-wider font-jostBook'>House No. 22(01) MKP, Wezi Kaunda Road,PHI, Lusaka, Zambia</p>
+                <p className='my-auto text-sm tracking-wider font-jostBook'>Kapwayambale Rd,Obama, Lusaka, Zambia</p>
               </div>
             </div>
           </div>

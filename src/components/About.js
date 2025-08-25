@@ -10,10 +10,11 @@ import Person from './Person'
 
 const About = () => {
     const {mainElementRef} = useContext(GlobalContext);
-
-    if(mainElementRef.current) {
+useEffect (() => {
+    if (mainElementRef && mainElementRef.current) {
         mainElementRef.current.scrollTo({top: 0});
     }
+}, [mainElementRef]);
   return (
     <div className='relative flex flex-col w-full h-auto'>
         <div className='relative flex flex-col w-full h-[60vh] shrink-0 overflow-x-hidden overflow-y-auto'>
@@ -210,7 +211,7 @@ const About = () => {
               MEET THE EXECUTIVES
           </p>
           <p style={{fontSize:42+'px',lineHeight:52+'px'}} className='text-center w-auto h-auto px-8 mx-auto pt-2 text-[rgb(50,50,50)] font-leBeauneNew'>
-              OUR EXPART TEAM
+              OUR EXPERT TEAM
           </p>
           <Executives/>
       </div>
@@ -310,7 +311,7 @@ const Executives = () => {
                 Component: () => <Person person={executive}/>
             })}
             className='flex flex-col h-auto shrink-0 cursor-pointer'>
-            <img src={executive.image?executive.image:executive.gendar == 'male'?'/images/male.svg':'/images/female.svg'} alt={size.width+'x'+size.height} 
+            <img src={executive.image?executive.image:executive.gender == 'male'?'/images/male.svg':'/images/female.svg'} alt={size.width+'x'+size.height}
                 style={{width:size.width+'px',height:size.height+'px'}}
                 className='flex object-cover shadow-xl rounded-md'
             />
