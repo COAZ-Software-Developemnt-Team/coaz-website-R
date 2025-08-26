@@ -12,6 +12,7 @@ import ProfessionalCategories from './components/ProfessionalCategories';
 import Services from './components/Services';
 import Association from './components/Association';
 import About from './components/About';
+import Objective from './components/Objective';
 import News from './components/News';
 import Organisation from './components/Organisation';
 import Membership from './components/Membership';
@@ -107,6 +108,7 @@ function App() {
                         {createRoute(organisation,Organisation)}
                         {createRoute(membership,Membership)}
                         <Route path='about' element={<About/>}/>
+                        <Route path='objective' element={<Objective/>}/>
                         <Route path='news' element={<News/>}/>
                     </Route>
                 </Routes>
