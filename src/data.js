@@ -2,6 +2,10 @@ import { FaRegCircleDot } from "react-icons/fa6";
 import AwardsAndCertificates from "./components/AwardsAndCertificates";
 import Partners from "./components/Partners";
 import Careers from "./components/Careers";
+import ReadMoreSection from "./components/ReadMore";
+import { Link } from "react-router-dom";
+
+
 
 export const people = [
     {
@@ -220,7 +224,7 @@ export const services = {
     menus:[
         {
             image:'/images/img_49.jpg',
-            name:'CPD Platform',
+            name:'Learning And CPD',
             link:'/ms'
         },
         {
@@ -424,8 +428,20 @@ export const organisation = {
                     name:'National Executive Committee',
                     link:'/organisation/governance/national_executive_committee',
                     about: [
-                        'The National Executive Committee (NEC) is the governing body of the Clinical Officers Association of Zambia. Responsible for decision making, formulate and implement policies, and oversee the affairs of the Association',
-                        'Has Authority to establish branches, committees and defend the association, members and the profession of clinical officer and its division at any level in Zambia and in signatory jurisdiction'
+                        'Executive authority of the Association derives from its members and exercises in a manner that promotes:',
+                        <ReadMoreSection>
+                            <Link
+                                to="/readmore"
+                                style={{
+                                    display: 'inline-block',
+                                    marginTop: '10px',
+                                    color: '#007bff',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                               Read More
+                            </Link>
+                        </ReadMoreSection>
                     ],
                     composition:[
                         {
@@ -500,7 +516,7 @@ export const organisation = {
                     ]
                 },
                 {
-                    name:'Committees of the Executine',
+                    name:'Committees of the Executive',
                     link:'/organisation/governance/committees_of_the_executive',
                     menus:[
                         {
@@ -645,7 +661,7 @@ export const organisation = {
                         },
                         {
                             name:'Legislation and Judicial',
-                            link:'/organisation/governance/committees_of_the_executive/legistration_and_judicial',
+                            link:'/organisation/governance/committees_of_the_executive/legislation_and_judicial',
                             about:[
                                 "The principal advocate and strategist for the profession's policy agenda, legislative priorities, and legal interests. The Committee’s mandate is to anticipate, analyze, and influence policy and legislative developments, champion initiatives that advance the interests and welfare of the profession and to provide expert guidance and representation in legal matters affecting members",
                             ],
@@ -723,8 +739,8 @@ export const organisation = {
                     link:'/organisation/governance/provincial_executive_committee',
                 },
                 {
-                    name:'Distrect Executive Committees',
-                    link:'/organisation/governance/distrect_executive_committees',
+                    name:'District Executive Committees',
+                    link:'/organisation/governance/district_executive_committees',
                 }
             ]
         },
@@ -773,10 +789,10 @@ export const organisation = {
                         }
                     ]
                 },
-                {
-                    name:'Executive Functions',
-                    link:'/organisation/administration/functions'
-                }
+                // {
+                //     name:'Executive Functions',
+                //     link:'/organisation/administration/functions'
+                // }
             ]
         }
     ]
@@ -788,7 +804,7 @@ export const membership = {
     menus:[
         {
             name:'Full Membership',
-            link:'/membership/full_membersip',
+            link:'/membership/full_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
@@ -813,11 +829,8 @@ export const membership = {
                         </p>
                     </div>
                 </div>,
-            RightsAndPrivileges:() => 
-                <div className='flex flex-col space-y-8 w-full h-auto'>
-                    <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
-                        Rights and Privileges
-                    </p>
+            RightsAndPrivileges:() => (
+                <ReadMoreSection title="Rights and Privileges">
                     <div className='flex flex-row space-x-4'>
                         <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'a)'}</p>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
@@ -860,12 +873,10 @@ export const membership = {
                             decisions through established procedures
                         </p>
                     </div>
-                </div>,
-            ObligationsAndResponsibilities:() => 
-                <div className='flex flex-col space-y-8 w-full h-auto'>
-                    <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
-                        Obligations and Responsibilities
-                    </p>
+                </ReadMoreSection>
+            ),
+            ObligationsAndResponsibilities:() => (
+                <ReadMoreSection title="Obligations and Responsibilities">
                     <div className='flex flex-row space-x-4'>
                         <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'a)'}</p>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
@@ -936,11 +947,13 @@ export const membership = {
                             </div>
                         </div>
                     </div>
-                </div>
+                        </ReadMoreSection>
+            ),
+
         },
         {
             name:'Associate Membership',
-            link:'/membership/associate_membersip',
+            link:'/membership/associate_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
@@ -982,7 +995,7 @@ export const membership = {
         },
         {
             name:'Student Membership',
-            link:'/membership/student_membersip',
+            link:'/membership/student_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
@@ -1024,7 +1037,7 @@ export const membership = {
         },
         {
             name:'Life Membership',
-            link:'/membership/life_membersip',
+            link:'/membership/life_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
