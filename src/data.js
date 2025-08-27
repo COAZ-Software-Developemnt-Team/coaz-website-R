@@ -421,6 +421,11 @@ export const organisation = {
     link:'/organisation',
     menus:[
         {
+            name: 'Laws Of the Association',
+            link: '/organisation/laws',
+            about: []
+        },
+        {
             name:'Governance',
             link:'/organisation/governance',
             menus:[
@@ -744,6 +749,7 @@ export const organisation = {
                 }
             ]
         },
+
         {
             name:'Administration',
             link:'/organisation/administration',
@@ -789,10 +795,6 @@ export const organisation = {
                         }
                     ]
                 },
-                // {
-                //     name:'Executive Functions',
-                //     link:'/organisation/administration/functions'
-                // }
             ]
         }
     ]
