@@ -22,7 +22,7 @@ const About = () => {
 
   return (
     <div className="relative flex flex-col w-full h-auto">
-      {/* Banner */}
+
       <div className="relative flex flex-col w-full h-[60vh] shrink-0 overflow-x-hidden overflow-y-auto">
         <img
           src="/images/img_35.jpg"
@@ -41,7 +41,7 @@ const About = () => {
         </div>
       </div>
 
-      {/* Content */}
+
       <div className="relative flex flex-col w-full h-auto px-[10%] shrink-0 bg-white">
         <div className="flex w-[2px] h-20 mx-auto border-r border-[rgb(204,204,204)]"></div>
         <p className="flex w-auto h-auto mx-auto mt-8 text-md text-[rgb(150,150,150)] font-leBeauneNew">
@@ -54,7 +54,7 @@ const About = () => {
           Learn More About The Association
         </p>
 
-        {/* Background */}
+
         <p
           style={{ fontSize: "30px", lineHeight: "52px" }}
           className="flex w-[90%] lg:w-[600px] h-auto mt-8 text-left text-[rgb(50,50,50)] font-leBeauneNew"

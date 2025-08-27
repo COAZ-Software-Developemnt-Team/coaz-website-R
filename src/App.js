@@ -1,5 +1,5 @@
 
-import { Routes,Route, useNavigate } from 'react-router-dom';
+import { Routes,Route, BrowserRouter as Router } from 'react-router-dom';
 import React, {useState, useEffect,useRef} from 'react';
 import './App.css';
 import './index.css'
@@ -17,6 +17,8 @@ import News from './components/News';
 import Organisation from './components/Organisation';
 import Membership from './components/Membership';
 import Page from './components/Page';
+import More from "./components/More";
+
 
 axios.defaults.baseURL = 'http://localhost:8080/api/';
 //axios.defaults.baseURL = 'http://localhost:8080/coaz/api/';
@@ -110,6 +112,7 @@ function App() {
                         <Route path='about' element={<About/>}/>
                         <Route path='objective' element={<Objective/>}/>
                         <Route path='news' element={<News/>}/>
+                        <Route path='readmore' element={<More/>} />
                     </Route>
                 </Routes>
             </GlobalContext.Provider>

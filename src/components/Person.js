@@ -42,7 +42,7 @@ const Person = ({person}) => {
                 </button>
             </div>
             <div className='flex flex-col w-full h-auto max-h-[80vh] pt-16 items-center no-scrollbar overflow-x-hidden overflow-y-auto bg-white'>
-                <img src={person.image?person.image:person.gendar == 'male'?'/images/male.svg':'/images/female.svg'} 
+                <img src={person.image?person.image:person.gender == 'male'?'/images/male.svg':'/images/female.svg'}
                     style={{width:'288px',height:'345.6px'}}
                     className='flex object-cover shadow-xl rounded-md shrink-0'
                 />

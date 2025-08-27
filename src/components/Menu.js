@@ -1,13 +1,13 @@
-
-import React, { useState, useEffect, useRef } from "react";
-import { PiCaretDown, PiCaretRight } from "react-icons/pi";
-import { Logo } from "./CoazIcons";
-import { FaPaperPlane, FaPhoneAlt } from "react-icons/fa";
-import { FaBars } from "react-icons/fa6";
+import React, {useState, useEffect, useRef} from "react";
+import {PiCaretDown, PiCaretRight} from "react-icons/pi";
+import {Logo} from "./CoazIcons";
+import {FaPaperPlane, FaPhoneAlt} from "react-icons/fa";
+import { FaBars } from "react-icons/fa";
 import {menus} from "../data";
 import Search from "../components/Search";
-import { renderToStaticMarkup } from 'react-dom/server'
-import { useInRouterContext, NavLink } from "react-router-dom";
+import {renderToStaticMarkup} from 'react-dom/server'
+import {useInRouterContext, NavLink} from "react-router-dom";
+
 
 const calcWidth = (Component) => {
     if (!Component) {
@@ -45,11 +45,13 @@ const calcSize = (Component) => {
 }
 
 const Menu = () => {
-  const [selected, setSelected] = useState(null);
-  const [navbarMenus,setNavbarMenus] = useState(null); 
-  const menuButtonsRef = useRef(null);
-  const highlightRef = useRef(null);
-  const more = 'More';
+    const [selected, setSelected] = useState(null);
+    const [navbarMenus, setNavbarMenus] = useState(null);
+    const [mobileMenuOpen, setMobileMenuOpen,mobileMenuRef] = useState(false);
+    const menuButtonsRef = useRef(null);
+    const highlightRef = useRef(null);
+    const more = 'More';
+
 
     const onEnter = (e) => {
         e.preventDefault();
@@ -62,19 +64,15 @@ const Menu = () => {
         }
     };
 
-  const onLeave = (e) => {
-    e.preventDefault();
-    if (selected) {
-      const active = document.getElementById(selected);
-      if (active) {
-        //let padding = 16;
-        //let x = active.offsetLeft;
-        //let width = active.offsetWidth;
-        //highlightRef.current.style.left = x + padding + "px";
-        //highlightRef.current.style.width = width - padding * 2 + "px";
-      }
-    }
-  };
+    const onLeave = (e) => {
+        e.preventDefault();
+        if (selected) {
+            const active = document.getElementById(selected);
+            if (active) {
+
+            }
+        }
+    };
 
     const reduceMenus = (menus) => {
         if (!menus || menus.length < 1) {
@@ -148,93 +146,15 @@ const Menu = () => {
     const px = 'px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%]'
 
     return (
-        /* <div style={{backgroundImage: 'url(/images/bg_8.jpg)'}}
-             className='relative flex flex-col space-y-4 w-full h-fit md:h-36 py-4 md:py-0 px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%] bg-center bg-cover shrink-0'>
-            <div style={{background: 'linear-gradient(to right, #1566ad 0%, #1b9de3 100%)', opacity: '.8'}}
-                 className="absolute left-0 top-0 w-full h-full"/>
-            <div className="flex flex-row w-full h-auto z-10 items-center justify-between text-white shrink-0">
-                <div className="flex flex-row space-x-4 items-center">
-                    <button id="logo-container" 
-                        style={{transition: "all .5s ease-in-out"}}
-                        className="flex w-[56px] h-[56px] sm:w-[80px] sm:h-[80px] items-center justify-center shrink-0"
-                    >
-                        <Logo fill="white"/>
-                    </button>
-                    <p className='text-4xl md:text-5xl font-nunitoSansBlack'>COAZ</p>
-                </div>
-                <div className="flex flex-row w-fit h-fit text-sm space-x-8">
-                    <div className="hidden xl:flex flex-row items-center space-x-1">
-                        <FaPaperPlane size={20}/>
-                        <p className="font-nunitoSansSemiBold">Email :</p>
-                        <p className="font-nunitoSansLight">info@coaz.com</p>
-                    </div>
-                    <div className="hidden xl:flex flex-row items-center space-x-1">
-                        <FaPhoneAlt size={20}/>
-                        <p className="font-nunitoSansSemiBold">Cell :</p>
-                        <p className="font-nunitoSansLight">+260 979 123 456</p>
-                    </div>
-                    <div className="hidden md:block w-fit h-fit space-x-2">
-                        <Search/>
-                    </div>
-                    <div className="flex flex-row items-center space-x-2">
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
-                            <a href="#user-form">
-                                Register
-                            </a>
-                        </button>
-                        <div className="h-4 border-l border-white" />
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
-                            <a href="https://portal.coaz.org/login"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Log In
-                            </a>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div ref={menuButtonsRef}
-                 className={`hidden md:flex py-2 border w-full h-16 sm:h-16 px-2 sm:px-4 items-center z-10 bg-white shrink-0 shadow-lg`}>
-                <div className="relative hidden sm:flex flex-row w-full h-fit items-center justify-center">
-                    {navbarMenus && navbarMenus.length > 0 && navbarMenus.map((menu, i) =>
-                        <MenuButton
-                            key={i}
-                            name={menu.name ? menu.name : ''}
-                            link={menu.link ? menu.link : '/'}
-                            menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
-                            setSelected={setSelected}
-                            onEnter={onEnter}
-                            onLeave={onLeave}
-                        />
-                    )}
-
-                </div>
-            </div>
-            <div className="relative w-full h-fit">
-                <div
-                    className="relative md:hidden flex flex-row w-full h-[56px] px-4 bg-white gap-2 rounded-full items-center justify-between z-10 overflow-hidden"
-                    style={{ marginTop: '-20px' }}
-                >
-                    <button className="flex w-8 h-8 text-theme items-center justify-center cursor-pointer shrink-0">
-                        <FaBars size={20}/>
-                    </button>
-
-                    <div className='w-full h-fit'>
-                        <Search/>
-                    </div>
-                </div>
-            </div>
-        </div> */
         <div style={{backgroundImage: 'url(/images/bg_8.jpg)'}}
              className={`relative flex flex-col space-y-4 w-full h-fit md:h-36 py-4 md:py-0  bg-center bg-cover shrink-0`}>
             <div style={{background: 'linear-gradient(to right, #1566ad 0%, #1b9de3 100%)', opacity: '.8'}}
                  className="absolute left-0 top-0 w-full h-full"/>
             <div className={`flex flex-row w-full h-auto ${px} z-10 items-center justify-between text-white shrink-0`}>
                 <div className="flex flex-row space-x-4 items-center">
-                    <button id="logo-container" 
-                        style={{transition: "all .5s ease-in-out"}}
-                        className="flex w-[56px] h-[56px] sm:w-[80px] sm:h-[80px] items-center justify-center shrink-0"
+                    <button id="logo-container"
+                            style={{transition: "all .5s ease-in-out"}}
+                            className="flex w-[56px] h-[56px] sm:w-[80px] sm:h-[80px] items-center justify-center shrink-0"
                     >
                         <Logo fill="white"/>
                     </button>
@@ -255,16 +175,18 @@ const Menu = () => {
                         <Search/>
                     </div>
                     <div className="flex flex-row items-center space-x-2">
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
+                        <button
+                            className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
                             <a href="#user-form">
                                 Register
                             </a>
                         </button>
-                        <div className="h-4 border-l border-white" />
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
+                        <div className="h-4 border-l border-white"/>
+                        <button
+                            className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
                             <a href="https://portal.coaz.org/login"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                               target="_blank"
+                               rel="noopener noreferrer"
                             >
                                 Log In
                             </a>
@@ -286,26 +208,56 @@ const Menu = () => {
                             onLeave={onLeave}
                         />
                     )}
-
+                    {/* <NavbarMenu /> */}
                 </div>
-            </div>
-            <div className="relative w-full h-fit">
-                <div
-                    className="relative md:hidden flex flex-row w-full h-[56px] px-4 bg-white gap-2 rounded-full items-center justify-between z-10 overflow-hidden"
-                    style={{ marginTop: '-20px' }}
-                >
-                    <button className="flex w-8 h-8 text-theme items-center justify-center cursor-pointer shrink-0">
+                <div className="sm:hidden flex flex-row w-full h-full items-center justify-between">
+                    <div onClick={e => {
+                        e.preventDefault();
+                        if (mobileMenuRef.current) {
+                            if (!mobileMenuOpen) {
+                                setMobileMenuOpen(true);
+                                let size = calcSize(
+                                    <div className="flex flex-col w-fit h-fit px-4 overflow-visible">
+                                        {menus && menus.length > 0 && menus.map((menu, i) =>
+                                            <MenuButton
+                                                key={i}
+                                                name={menu.name ? menu.name : 'null'}
+                                                link={menu.link ? menu.link : '/'}
+                                                menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
+                                                setSelected={setSelected}
+                                                onEnter={onEnter}
+                                                onLeave={onLeave}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                                console.log(size.height);
+                                mobileMenuRef.current.style.height = size.height + 'px';
+                            } else {
+                                setMobileMenuOpen(false);
+                                mobileMenuRef.current.style.height = '0';
+                            }
+                        }
+                    }}
+                         onMouseLeave={e => {
+                             e.preventDefault();
+                             if (mobileMenuRef.current) {
+                                 setMobileMenuOpen(false);
+                                 mobileMenuRef.current.style.height = '0';
+                             }
+                         }}
+                         className="flex w-8 h-8 items-center justify-center cursor-pointer text-[rgb(0,175,240)]">
                         <FaBars size={20}/>
-                    </button>
-
-                    <div className='w-full h-fit'>
-                        <Search/>
+                    </div>
+                    <div className="flex flex-row w-fit h-fit space-x-2">
+                        <Search color='rgb(100,100,100)'/>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
+
 
 export default Menu;
 
@@ -316,21 +268,34 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
     const menusRef = useRef(null);
     const isInRouterContext = useInRouterContext();
 
+    MenuButton.defaultProps = {
+        onEnter: () => {
+        },
+        onLeave: () => {
+        },
+        closeParentDropDown: () => {
+        },
+        setSelected: () => {
+        },
+        parentRef: null,
+        mobileMode: true,
+    };
+
     const dropDown = () => {
         if (!droppedDown) {
             if (menuRef.current && dropDownRef.current && menusRef.current) {
                 let parent = menuRef.current;
                 do {
                     parent = parent.parentElement;
-                } while (parent && parent.tagName.toLowerCase() != 'header');
+                } while (parent && parent.tagName.toLowerCase() !== 'header');
                 if (parent) {
                     let size = calcSize(
                         <div className="flex flex-col w-fit h-fit px-4 overflow-visible">
                             {menus && menus.length > 0 && menus.map((menu, i) =>
-                                <MenuText key={i} name={menu.name} menus={menu.menus} parentRef={menuRef} isCalc={true}/>
+                                <MenuText key={i} name={menu.name} menus={menu.menus} parentRef={menuRef}
+                                          isCalc={true}/>
                             )}
                         </div>
-
                     );
                     let viewWidth = parent.clientWidth;
                     let menuRect = menuRef.current.getBoundingClientRect();
@@ -371,51 +336,50 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
                 menusRef.current.style.overflow = 'hidden';
             });
         }
-        //closeParentDropDown && closeParentDropDown();
     }
 
-    const onMouseEnter = (e) => {
+    const handleMouseEnter = (e) => {
         e.preventDefault();
         dropDown();
         onEnter(e);
-    }
+        if (typeof onEnter === 'function') {
+            onEnter(e);
+        }
+    };
 
-    const onMouseLeave = (e) => {
+    const handleMouseLeave = (e) => {
         e.preventDefault();
         closeDropDown();
-        onLeave(e);
-    }
-
-  return (
-    <div
-      ref={menuRef}
-      onClick={(e) => {
-        e.stopPropagation();
-        if(menus && menus.length > 0) {
-          if(!droppedDown) {
-            dropDown();
-          } else {
-            closeDropDown();
-          }
-        } else {
-            if(setSelected) {
-                setSelected(name);
-            }
-            if(closeParentDropDown) {
-                closeParentDropDown();
-            }
+        if (typeof onLeave === 'function') {
+            onLeave(e);
         }
-      }}
-            onMouseOver={() => {
+    };
 
+    return (
+        <div
+            ref={menuRef}
+            onClick={(e) => {
+                e.stopPropagation();
+                if (menus && menus.length > 0) {
+                    if (!droppedDown) {
+                        dropDown();
+                    } else {
+                        closeDropDown();
+                    }
+                } else {
+                    if (setSelected) {
+                        setSelected(name);
+                    }
+                    if (closeParentDropDown) {
+                        closeParentDropDown();
+                    }
+                }
             }}
-            onMouseEnter={(e) => {
-                onMouseEnter(e);
-            }}
-            onMouseLeave={onMouseLeave}
+            onMouseEnter={!mobileMode ? handleMouseEnter : undefined}
+            onMouseLeave={!mobileMode ? handleMouseLeave : undefined}
             id={name}
             style={{transition: 'all .5s ease-in-out'}}
-            className={`relative flex flex-row text-heading items-center overflow-hidden cursor-pointer shrink-0 capitalize`}
+            className="relative flex flex-row text-heading items-center overflow-hidden cursor-pointer shrink-0 capitalize"
         >
             {menus && menus.length > 0 ?
                 <>
@@ -440,11 +404,13 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
                     </div>
                 </>
                 :
-                isInRouterContext?
-                <NavLink to={link ? link : '/'} className={({isActive}) => {return `${isActive?'text-[rgb(0,175,240)]':'text-[rgb(68,71,70)]'}`}}>
+                isInRouterContext ?
+                    <NavLink to={link ? link : '/'} className={({isActive}) => {
+                        return `${isActive ? 'text-[rgb(0,175,240)]' : 'text-[rgb(68,71,70)]'}`
+                    }}>
+                        <MenuText name={name} parentRef={parentRef}/>
+                    </NavLink> :
                     <MenuText name={name} parentRef={parentRef}/>
-                </NavLink>:
-                <MenuText name={name} parentRef={parentRef}/>
             }
         </div>
     );
