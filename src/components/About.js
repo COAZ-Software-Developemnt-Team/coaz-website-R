@@ -51,7 +51,7 @@ const About = () => {
           style={{ fontSize: "42px", lineHeight: "52px" }}
           className="flex w-[90%] lg:w-[600px] h-auto mt-8 mx-auto text-center text-[rgb(50,50,50)] font-leBeauneNew"
         >
-          Learn More The About Association
+          Learn More About The Association
         </p>
 
         {/* Background */}
