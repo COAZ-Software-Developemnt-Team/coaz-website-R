@@ -22,7 +22,7 @@ const About = () => {
 
   return (
     <div className="relative flex flex-col w-full h-auto">
-      {/* Banner */}
+
       <div className="relative flex flex-col w-full h-[60vh] shrink-0 overflow-x-hidden overflow-y-auto">
         <img
           src="/images/img_35.jpg"
