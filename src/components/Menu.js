@@ -461,28 +461,51 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
     );
 };
 
-const MenuText = ({name, menus, parentRef, isCalc, mobileMode, droppedDown}) => {
-    return (
-        <div
-            className={`flex flex-row ${
-                parentRef || mobileMode ? 
-                    isCalc ? 'w-fit space-x-2 font-nunitoSansSemiBold' : 'w-full justify-between font-nunitoSansSemiBold' : 
-                    'font-nunitoSansBold w-fit space-x-2'
-            } text-sm tracking-wider ${
-                mobileMode ? 'px-4 py-3' : 'px-4 py-2'
-            } items-center shrink-0 capitalize ${
-                mobileMode ? 'bg-white' : ''
-            }`}>
-            <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
-            {menus && menus.length > 0 ? 
-                (mobileMode ? 
-                    (droppedDown ? <PiCaretDown size={16} className="transform rotate-180 transition-transform" /> : <PiCaretDown size={16} />) : 
-                    (parentRef ? <PiCaretRight size={16}/> : <PiCaretDown size={16}/>)
-                ) : 
-                <></>
-            }
-        </div>
-    )
-}
+const MenuText = ({ name, menus = [], parentRef, mobileMode }) => {
+    const [droppedDown, setDroppedDown] = useState(false);
 
+    const toggleDropdown = () => {
+        if (menus.length > 0) setDroppedDown(!droppedDown);
+    };
+
+    return (
+        <div className="flex flex-col w-full">
+            {/* Main menu row */}
+            <div
+                onClick={toggleDropdown}
+                className={`flex flex-row items-center w-full font-nunitoSansSemiBold text-sm tracking-wider px-4 py-3 capitalize cursor-pointer
+                    ${mobileMode ? 'bg-white' : ''} hover:bg-gray-100`}
+            >
+                {/* Fixed width icon placeholder */}
+                <div className="flex-shrink-0 w-6 flex justify-center">
+                    {menus && menus.length > 0 && (
+                        mobileMode
+                            ? <PiCaretDown size={16} className={`transform transition-transform ${droppedDown ? 'rotate-180' : ''}`} />
+                            : parentRef
+                            ? <PiCaretRight size={16}/>
+                            : <PiCaretDown size={16}/>
+                    )}
+                </div>
+
+                {/* Text section */}
+                <div className="flex-1">{name}</div>
+            </div>
+
+            {/* Submenu items */}
+            {menus.length > 0 && droppedDown && (
+                <div className="flex flex-col ml-6 border-l border-gray-200">
+                    {menus.map((subMenu, idx) => (
+                        <MenuText
+                            key={idx}
+                            name={subMenu.name}
+                            menus={subMenu.menus || []}
+                            parentRef={true}
+                            mobileMode={mobileMode}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 export default Menu;
