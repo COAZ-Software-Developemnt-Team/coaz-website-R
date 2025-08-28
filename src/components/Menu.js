@@ -66,7 +66,9 @@ const Menu = () => {
         e.preventDefault();
         if (selected) {
             const active = document.getElementById(selected);
-            // Handle active menu item styling if needed
+            if (active) {
+                // Handle active menu item styling if needed
+            }
         }
     };
 
@@ -184,7 +186,7 @@ const Menu = () => {
                     <div className="hidden md:block w-fit h-fit space-x-2">
                         <Search/>
                     </div>
-                    <div className="hidden md:flex flex-row items-center space-x-2">
+                    <div className="flex flex-row items-center space-x-2">
                         <button
                             className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
                             <a href="#user-form">
@@ -216,7 +218,7 @@ const Menu = () => {
             {/* Desktop Menu */}
             <div ref={menuButtonsRef}
                  className={`hidden md:flex py-2 w-full h-16 sm:h-16 px-2 sm:px-4 items-center z-10 bg-white shrink-0 shadow-lg`}>
-                <div className="relative hidden sm:flex flex-row w-full h-fit items-center justify-center">
+                <div className="relative hidden sm:flex flex-row w-full h-fit items-center justify-start">
                     {navbarMenus && navbarMenus.length > 0 && navbarMenus.map((menu, i) =>
                         <MenuButton
                             key={i}
@@ -276,7 +278,6 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
     const [droppedDown, setDroppedDown] = useState(false);
     const menuRef = useRef(null);
     const dropDownRef = useRef(null);
-    const menusRef = useRef(null);
     const isInRouterContext = useInRouterContext();
 
     MenuButton.defaultProps = {
@@ -289,8 +290,13 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
     };
 
     const dropDown = () => {
-        if (!droppedDown) {
-            if (menuRef.current && dropDownRef.current && menusRef.current) {
+        if (!droppedDown && dropDownRef.current) {
+            if (mobileMode) {
+                // Mobile dropdown - expand to show content
+                dropDownRef.current.style.height = 'auto';
+                dropDownRef.current.style.overflow = 'visible';
+            } else {
+                // Desktop dropdown logic (unchanged)
                 let parent = menuRef.current;
                 do {
                     parent = parent.parentElement;
@@ -300,41 +306,29 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
                     let size = calcSize(
                         <div className="flex flex-col w-fit h-fit px-4 overflow-visible">
                             {menus && menus.length > 0 && menus.map((menu, i) =>
-                                <MenuText key={i} name={menu.name} menus={menu.menus} parentRef={menuRef}
-                                          isCalc={true}/>
+                                <div key={i} className="px-4 py-2">{menu.name}</div>
                             )}
                         </div>
                     );
                     
-                    if (mobileMode) {
-                        dropDownRef.current.style.height = size.height + 'px';
-                        menusRef.current.style.overflow = 'visible';
-                    } else {
-                        let viewWidth = parent.clientWidth;
-                        let menuRect = menuRef.current.getBoundingClientRect();
-                        menuRef.current.style.overflow = 'visible';
-                        
-                        if (parentRef) {
-                            dropDownRef.current.style.top = '0';
-                            if ((menuRect.right + size.width) > viewWidth) {
-                                dropDownRef.current.style.left = (0 - size.width) + 'px';
-                            } else {
-                                dropDownRef.current.style.left = '100%';
-                            }
+                    let viewWidth = parent.clientWidth;
+                    let menuRect = menuRef.current.getBoundingClientRect();
+                    menuRef.current.style.overflow = 'visible';
+                    
+                    if (parentRef) {
+                        dropDownRef.current.style.top = '0';
+                        if ((menuRect.right + size.width) > viewWidth) {
+                            dropDownRef.current.style.left = (0 - size.width) + 'px';
                         } else {
-                            dropDownRef.current.style.top = '100%';
+                            dropDownRef.current.style.left = '100%';
                         }
-                        dropDownRef.current.style.width = size.width + 'px';
-                        dropDownRef.current.style.opacity = '1';
-                        
-                        dropDownRef.current.animate({height: [0, size.height + 'px']}, {
-                            duration: 300,
-                            easing: 'ease-in-out'
-                        }).addEventListener('finish', () => {
-                            dropDownRef.current.style.height = size.height + 'px';
-                            menusRef.current.style.overflow = 'visible';
-                        });
+                    } else {
+                        dropDownRef.current.style.top = '100%';
                     }
+                    dropDownRef.current.style.width = size.width + 'px';
+                    dropDownRef.current.style.opacity = '1';
+                    
+                    dropDownRef.current.style.height = size.height + 'px';
                 }
             }
             setDroppedDown(true);
@@ -342,20 +336,18 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
     }
 
     const closeDropDown = () => {
-        setDroppedDown(false);
-        if (menuRef.current && dropDownRef.current) {
+        if (droppedDown && dropDownRef.current) {
             if (mobileMode) {
+                // Mobile dropdown - collapse to hide content
                 dropDownRef.current.style.height = '0';
-                menusRef.current.style.overflow = 'hidden';
+                dropDownRef.current.style.overflow = 'hidden';
             } else {
-                dropDownRef.current.animate({opacity: [1, 0]}, {duration: 300}).addEventListener('finish', () => {
-                    dropDownRef.current.style.width = '0';
-                    dropDownRef.current.style.height = '0';
-                    dropDownRef.current.style.transition = 'none';
-                    menuRef.current.style.overflow = 'hidden';
-                    menusRef.current.style.overflow = 'hidden';
-                });
+                // Desktop dropdown close
+                dropDownRef.current.style.opacity = '0';
+                dropDownRef.current.style.width = '0';
+                dropDownRef.current.style.height = '0';
             }
+            setDroppedDown(false);
         }
     }
 
@@ -401,25 +393,38 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
         <div
             ref={menuRef}
             onClick={handleClick}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onMouseEnter={!mobileMode ? handleMouseEnter : undefined}
+            onMouseLeave={!mobileMode ? handleMouseLeave : undefined}
             id={name}
             style={{transition: 'all .3s ease-in-out'}}
-            className={`relative flex flex-col text-heading overflow-hidden cursor-pointer shrink-0 capitalize ${
-                mobileMode ? 'w-full border-b border-gray-100' : 'flex-row items-center'
+            className={`relative flex flex-col text-heading cursor-pointer shrink-0 capitalize ${
+                mobileMode ? 'w-full border-b border-gray-100' : ''
             }`}
         >
-            {menus && menus.length > 0 ?
+            {menus && menus.length > 0 ? (
                 <>
-                    <MenuText name={name} menus={menus} parentRef={parentRef} mobileMode={mobileMode} droppedDown={droppedDown}/>
-                    <div ref={dropDownRef}
-                         className={`bg-[rgb(243,244,245)] ${
-                             mobileMode ? 
-                                 'w-full overflow-hidden transition-all duration-300 ease-in-out h-0' : 
-                                 'absolute left-0 top-full w-0 h-0 custom-shadow z-40'
-                         }`}>
-                        <div ref={menusRef} className="relative flex flex-col w-full h-full overflow-hidden">
-                            {menus && menus.length > 0 && menus.map((menu, i) =>
+                    <div className={`flex flex-row ${
+                        mobileMode ? 'w-full justify-between font-nunitoSansSemiBold' : 'font-nunitoSansBold w-fit space-x-2'
+                    } text-sm tracking-wider px-4 py-2 items-center shrink-0 capitalize`}>
+                        <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
+                        {mobileMode ? (
+                            droppedDown ? <PiCaretDown size={16} className="transform rotate-180 transition-transform" /> : <PiCaretDown size={16} />
+                        ) : (
+                            parentRef ? <PiCaretRight size={16}/> : <PiCaretDown size={16}/>
+                        )}
+                    </div>
+                    
+                    <div
+                        ref={dropDownRef}
+                        className={`${
+                            mobileMode ? 
+                                'overflow-hidden transition-all duration-300 ease-in-out bg-gray-50' : 
+                                'absolute left-0 top-full bg-[rgb(243,244,245)] custom-shadow z-40'
+                        }`}
+                        style={mobileMode ? {height: '0'} : {height: '0', width: '0', opacity: '0'}}
+                    >
+                        <div className="flex flex-col">
+                            {menus && menus.length > 0 && menus.map((menu, i) => (
                                 <MenuButton
                                     key={i}
                                     name={menu.name ? menu.name : 'null'}
@@ -432,57 +437,43 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave
                                     closeParentDropDown={closeDropDown}
                                     mobileMode={mobileMode}
                                 />
-                            )}
+                            ))}
                         </div>
                     </div>
                 </>
-                :
-                isInRouterContext ?
+            ) : (
+                isInRouterContext ? (
                     <NavLink 
                         to={link ? link : '/'} 
                         className={({isActive}) => {
                             return `${isActive ? 'text-[rgb(0,175,240)]' : 'text-[rgb(68,71,70)]'} ${
-                                mobileMode ? 'px-4 py-3' : ''
+                                mobileMode ? 'px-4 py-3 block w-full' : ''
                             }`
                         }}
                         onClick={closeParentDropDown}
                     >
-                        <MenuText name={name} parentRef={parentRef} mobileMode={mobileMode}/>
-                    </NavLink> :
+                        <div className={`flex flex-row ${
+                            mobileMode ? 'w-full justify-between font-nunitoSansSemiBold' : 'font-nunitoSansBold w-fit space-x-2'
+                        } text-sm tracking-wider px-4 py-2 items-center shrink-0 capitalize`}>
+                            <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
+                        </div>
+                    </NavLink>
+                ) : (
                     <a 
                         href={link} 
-                        className={mobileMode ? 'px-4 py-3' : ''}
+                        className={mobileMode ? 'px-4 py-3 block w-full' : ''}
                         onClick={closeParentDropDown}
                     >
-                        <MenuText name={name} parentRef={parentRef} mobileMode={mobileMode}/>
+                        <div className={`flex flex-row ${
+                            mobileMode ? 'w-full justify-between font-nunitoSansSemiBold' : 'font-nunitoSansBold w-fit space-x-2'
+                        } text-sm tracking-wider px-4 py-2 items-center shrink-0 capitalize`}>
+                            <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
+                        </div>
                     </a>
-            }
+                )
+            )}
         </div>
     );
 };
-
-const MenuText = ({name, menus, parentRef, isCalc, mobileMode, droppedDown}) => {
-    return (
-        <div
-            className={`flex flex-row ${
-                parentRef || mobileMode ? 
-                    isCalc ? 'w-fit space-x-2 font-nunitoSansSemiBold' : 'w-full justify-between font-nunitoSansSemiBold' : 
-                    'font-nunitoSansBold w-fit space-x-2'
-            } text-sm tracking-wider ${
-                mobileMode ? 'px-4 py-3' : 'px-4 py-2'
-            } items-center shrink-0 capitalize ${
-                mobileMode ? 'bg-white' : ''
-            }`}>
-            <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
-            {menus && menus.length > 0 ? 
-                (mobileMode ? 
-                    (droppedDown ? <PiCaretDown size={16} className="transform rotate-180 transition-transform" /> : <PiCaretDown size={16} />) : 
-                    (parentRef ? <PiCaretRight size={16}/> : <PiCaretDown size={16}/>)
-                ) : 
-                <></>
-            }
-        </div>
-    )
-}
 
 export default Menu;
