@@ -4,6 +4,8 @@ import Partners from "./components/Partners";
 import Careers from "./components/Careers";
 import ReadMoreSection from "./components/ReadMore";
 import { Link } from "react-router-dom";
+import {GoDotFill} from "react-icons/go";
+import React from "react";
 
 
 
@@ -420,11 +422,7 @@ export const organisation = {
     name:'Organisation',
     link:'/organisation',
     menus:[
-        {
-            name: 'Laws Of the Association',
-            link: '/organisation/laws',
-            about: []
-        },
+
         {
             name:'Governance',
             link:'/organisation/governance',
@@ -796,7 +794,83 @@ export const organisation = {
                     ]
                 },
             ]
-        }
+        },
+
+        {
+            name: 'Laws Of The Association',
+            link: '/organisation/laws',
+            about: [
+                <p key="intro" className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                    The Association will be governed in accordance with the following instruments, in order of precedence:
+                </p>,
+
+                <div key="bullets" className="flex flex-col space-y-4 mt-6 w-full">
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            This Constitution
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            Resolutions of the General Assembly
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            By-laws and Regulations
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            Membership Code of Conduct
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            Professional Code of Conduct
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row space-x-4">
+                        <GoDotFill size={16} className="text-[rgb(85,85,85)] mt-[5px] shrink-0" />
+                        <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                            Other Applicable National Laws
+                        </p>
+                    </div>
+                    <p
+                        style={{ fontSize: "25px", lineHeight: "52px" }}
+                        className="flex w-[90%] lg:w-[600px] h-auto mt-6 text-left text-[rgb(50,50,50)] font-leBeauneNew"
+                    >
+                        Constitution
+                    </p>
+                    <p className="text-[rgb(85,85,85)] text-lg font-jostSemi">
+                        Download the official constitution of the Clinical Officers Association of Zambia below.
+                    </p>
+
+                    <div className="flex justify-center mt-4">
+                        <a
+                            href="/Files/COAZ_CONSTITUTION_2025.pdf"
+                            download
+                            className="px-6 py-3 bg-blue-600 text-white font-jostSemi rounded-lg shadow hover:bg-blue-800 transition"
+                        >
+                            Download Constitution (PDF)
+                        </a>
+                    </div>
+
+                </div>
+
+                    ],
+        },
+
     ]
 }
 
@@ -956,7 +1030,7 @@ export const membership = {
         {
             name:'Associate Membership',
             link:'/membership/associate_membership',
-            EligibilityCriteria:() => 
+            EligibilityCriteria:() =>
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Eligibility Criteria
@@ -967,7 +1041,8 @@ export const membership = {
                         Associate Membership shall be defined in the Association's guidelines
                     </p>
                 </div>,
-            RightsAndPrivileges:() => 
+            RightsAndPrivileges:() =>
+                <ReadMoreSection title="Rights And Privileges">
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Rights and Privileges
@@ -994,6 +1069,7 @@ export const membership = {
                         </p>
                     </div>
                 </div>
+                </ReadMoreSection>
         },
         {
             name:'Student Membership',
@@ -1009,7 +1085,8 @@ export const membership = {
                         Student Membership shall be explicitly set forth in the Association's regulations
                     </p>
                 </div>,
-            RightsAndPrivileges:() => 
+            RightsAndPrivileges:() =>
+                <ReadMoreSection title="Rights And Privileges">
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Rights and Privileges
@@ -1036,6 +1113,7 @@ export const membership = {
                         </p>
                     </div>
                 </div>
+                </ReadMoreSection>
         },
         {
             name:'Life Membership',
@@ -1051,7 +1129,8 @@ export const membership = {
                         Membership shall be outlined in the Association's member regulations
                     </p>
                 </div>,
-            RightsAndPrivileges:() => 
+            RightsAndPrivileges:() =>
+                <ReadMoreSection title="Rights And Privileges">
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Rights and Privileges
@@ -1076,6 +1155,7 @@ export const membership = {
                         </p>
                     </div>
                 </div>
+                </ReadMoreSection>
         },
         {
             name:'Honorary Membership',
@@ -1091,7 +1171,8 @@ export const membership = {
                         shall be established by the National Executive Committee
                     </p>
                 </div>,
-            RightsAndPrivileges:() => 
+            RightsAndPrivileges:() =>
+                <ReadMoreSection title="Rights And Privileges">
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Rights and Privileges
@@ -1118,6 +1199,7 @@ export const membership = {
                         </p>
                     </div>
                 </div>
+                </ReadMoreSection>
         },
         {
             name:'Grounds for Termination',
