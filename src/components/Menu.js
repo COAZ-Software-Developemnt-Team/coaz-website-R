@@ -1,7 +1,8 @@
 import React, {useState, useEffect, useRef} from "react";
 import {PiCaretDown, PiCaretRight} from "react-icons/pi";
 import {Logo} from "./CoazIcons";
-import {FaPaperPlane, FaPhoneAlt, FaBars, FaTimes} from "react-icons/fa";
+import {FaPaperPlane, FaPhoneAlt} from "react-icons/fa";
+import {FaBars} from "react-icons/fa6";
 import {menus} from "../data";
 import Search from "../components/Search";
 import {renderToStaticMarkup} from 'react-dom/server'
@@ -45,30 +46,10 @@ const calcSize = (Component) => {
 const Menu = () => {
     const [selected, setSelected] = useState(null);
     const [navbarMenus, setNavbarMenus] = useState(null);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const menuButtonsRef = useRef(null);
-    const mobileMenuRef = useRef(null);
-    const highlightRef = useRef(null);
     const more = 'More';
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const onEnter = (e) => {
-        e.preventDefault();
-        if (highlightRef.current) {
-            let padding = 16;
-            let x = e.target.offsetLeft;
-            let width = e.target.offsetWidth;
-            highlightRef.current.style.left = x + padding + "px";
-            highlightRef.current.style.width = width - padding * 2 + "px";
-        }
-    };
-
-    const onLeave = (e) => {
-        e.preventDefault();
-        if (selected) {
-            const active = document.getElementById(selected);
-            // Handle active menu item styling if needed
-        }
-    };
 
     const reduceMenus = (menus) => {
         if (!menus || menus.length < 1) {
@@ -129,35 +110,21 @@ const Menu = () => {
                 }
             }
         });
-        
         if (menuButtonsRef.current) {
             observer.observe(menuButtonsRef.current)
         }
-        
         return () => {
             observer.disconnect();
         }
+
+
     }, [])
-
-    const toggleMobileMenu = () => {
-        setMobileMenuOpen(!mobileMenuOpen);
-    }
-
-    useEffect(() => {
-        if (mobileMenuRef.current) {
-            if (mobileMenuOpen) {
-                mobileMenuRef.current.style.height = mobileMenuRef.current.scrollHeight + "px";
-            } else {
-                mobileMenuRef.current.style.height = "0px";
-            }
-        }
-    }, [mobileMenuOpen]);
 
     const px = 'px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%]'
 
     return (
         <div style={{backgroundImage: 'url(/images/bg_8.jpg)'}}
-             className={`relative flex flex-col space-y-4 w-full h-fit md:h-36 py-4 md:py-0 bg-center bg-cover shrink-0`}>
+             className={`relative flex flex-col space-y-4 w-full h-fit md:h-36 py-4 md:py-0  bg-center bg-cover shrink-0`}>
             <div style={{background: 'linear-gradient(to right, #1566ad 0%, #1b9de3 100%)', opacity: '.8'}}
                  className="absolute left-0 top-0 w-full h-full"/>
             <div className={`flex flex-row w-full h-auto ${px} z-10 items-center justify-between text-white shrink-0`}>
@@ -184,10 +151,13 @@ const Menu = () => {
                     <div className="hidden md:block w-fit h-fit space-x-2">
                         <Search/>
                     </div>
-                    <div className="hidden md:flex flex-row items-center space-x-2">
+                    <div className="flex flex-row items-center space-x-2">
                         <button
                             className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
-                            <a href="#user-form">
+                            <a href="https://portal.coaz.org/register"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                            >
                                 Register
                             </a>
                         </button>
@@ -202,18 +172,9 @@ const Menu = () => {
                             </a>
                         </button>
                     </div>
-                    <div className="md:hidden flex items-center">
-                        <button 
-                            onClick={toggleMobileMenu}
-                            className="p-2 text-white focus:outline-none"
-                        >
-                            {mobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
-                        </button>
-                    </div>
                 </div>
             </div>
-            
-            {/* Desktop Menu */}
+            {/*Desktop Menu*/}
             <div ref={menuButtonsRef}
                  className={`hidden md:flex py-2 w-full h-16 sm:h-16 px-2 sm:px-4 items-center z-10 bg-white shrink-0 shadow-lg`}>
                 <div className="relative hidden sm:flex flex-row w-full h-fit items-center justify-center">
@@ -224,283 +185,130 @@ const Menu = () => {
                             link={menu.link ? menu.link : '/'}
                             menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
                             setSelected={setSelected}
-                            onEnter={onEnter}
-                            onLeave={onLeave}
                         />
                     )}
+
                 </div>
             </div>
-            
-            {/* Mobile Menu */}
-            <div 
-                ref={mobileMenuRef}
-                className={`md:hidden bg-white overflow-hidden transition-all duration-500 ease-in-out h-0`}
-            >
-                <div className="px-4 py-2">
-                    <Search color='rgb(100,100,100)' fullWidth={true} />
-                </div>
-                <div className="flex flex-col">
-                    {menus && menus.length > 0 && menus.map((menu, i) =>
-                        <MenuButton
-                            key={i}
-                            name={menu.name ? menu.name : ''}
-                            link={menu.link ? menu.link : '/'}
-                            menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
-                            setSelected={setSelected}
-                            mobileMode={true}
-                            closeParentDropDown={toggleMobileMenu}
-                        />
-                    )}
-                </div>
-                <div className="flex flex-col px-4 py-2 space-y-2 border-t border-gray-200">
-                    <button className="p-2 w-full text-center font-nunitoSansRegular text-[rgb(0,175,240)] rounded cursor-pointer">
-                        <a href="#user-form">
-                            Register
-                        </a>
+
+            {/*Mobile View*/}
+            <div className="relative w-full h-fit">
+                <div
+                    className="relative md:hidden flex flex-row w-full h-[56px] px-4 bg-white gap-2 rounded-full items-center justify-between z-10 overflow-hidden"
+                    style={{marginTop: '-10px'}}
+                >
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setMobileMenuOpen(!mobileMenuOpen);
+                        }}
+                        className="flex w-8 h-8 text-theme items-center justify-center cursor-pointer shrink-0"
+                    >
+                        <FaBars size={20}/>
                     </button>
-                    <button className="p-2 w-full text-center font-nunitoSansRegular text-[rgb(0,175,240)] rounded cursor-pointer">
-                        <a href="https://portal.coaz.org/login"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                        >
-                            Log In
-                        </a>
-                    </button>
+
+                    <div className='w-full h-fit'>
+                        <Search/>
+                    </div>
                 </div>
+                {/* Show mobile dropdown if open */}
+                {mobileMenuOpen && (
+                    <div className="absolute top-full left-0 w-full bg-white shadow-md z-20">
+                        {navbarMenus && navbarMenus.length > 0 && navbarMenus.map((menu, i) => (
+                            <MenuButton
+                                key={i}
+                                name={menu.name ? menu.name : ''}
+                                link={menu.link ? menu.link : '/'}
+                                menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
+                                setSelected={setSelected}
+                                mobileMode={true}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
-        </div>
+            </div>
     );
 };
 
-const MenuButton = ({name, link, menus, parentRef, setSelected, onEnter, onLeave, closeParentDropDown, mobileMode}) => {
+export default Menu;
+
+const MenuButton = ({name, link, menus, parentRef, setSelected,closeParentDropDown, mobileMode}) => {
     const [droppedDown, setDroppedDown] = useState(false);
-    const menuRef = useRef(null);
-    const dropDownRef = useRef(null);
-    const menusRef = useRef(null);
     const isInRouterContext = useInRouterContext();
 
-    MenuButton.defaultProps = {
-        onEnter: () => {},
-        onLeave: () => {},
-        closeParentDropDown: () => {},
-        setSelected: () => {},
-        parentRef: null,
-        mobileMode: false,
-    };
-
-    const dropDown = () => {
-        if (!droppedDown) {
-            if (menuRef.current && dropDownRef.current && menusRef.current) {
-                let parent = menuRef.current;
-                do {
-                    parent = parent.parentElement;
-                } while (parent && parent.tagName.toLowerCase() !== 'header');
-                
-                if (parent) {
-                    let size = calcSize(
-                        <div className="flex flex-col w-fit h-fit px-4 overflow-visible">
-                            {menus && menus.length > 0 && menus.map((menu, i) =>
-                                <MenuText key={i} name={menu.name} menus={menu.menus} parentRef={menuRef}
-                                          isCalc={true}/>
-                            )}
-                        </div>
-                    );
-                    
-                    if (mobileMode) {
-                        dropDownRef.current.style.height = size.height + 'px';
-                        menusRef.current.style.overflow = 'visible';
-                    } else {
-                        let viewWidth = parent.clientWidth;
-                        let menuRect = menuRef.current.getBoundingClientRect();
-                        menuRef.current.style.overflow = 'visible';
-                        
-                        if (parentRef) {
-                            dropDownRef.current.style.top = '0';
-                            if ((menuRect.right + size.width) > viewWidth) {
-                                dropDownRef.current.style.left = (0 - size.width) + 'px';
-                            } else {
-                                dropDownRef.current.style.left = '100%';
-                            }
-                        } else {
-                            dropDownRef.current.style.top = '100%';
-                        }
-                        dropDownRef.current.style.width = size.width + 'px';
-                        dropDownRef.current.style.opacity = '1';
-                        
-                        dropDownRef.current.animate({height: [0, size.height + 'px']}, {
-                            duration: 300,
-                            easing: 'ease-in-out'
-                        }).addEventListener('finish', () => {
-                            dropDownRef.current.style.height = size.height + 'px';
-                            menusRef.current.style.overflow = 'visible';
-                        });
-                    }
-                }
-            }
-            setDroppedDown(true);
-        }
-    }
-
-    const closeDropDown = () => {
-        setDroppedDown(false);
-        if (menuRef.current && dropDownRef.current) {
-            if (mobileMode) {
-                dropDownRef.current.style.height = '0';
-                menusRef.current.style.overflow = 'hidden';
-            } else {
-                dropDownRef.current.animate({opacity: [1, 0]}, {duration: 300}).addEventListener('finish', () => {
-                    dropDownRef.current.style.width = '0';
-                    dropDownRef.current.style.height = '0';
-                    dropDownRef.current.style.transition = 'none';
-                    menuRef.current.style.overflow = 'hidden';
-                    menusRef.current.style.overflow = 'hidden';
-                });
-            }
-        }
-    }
-
-    const handleMouseEnter = (e) => {
-        e.preventDefault();
-        if (!mobileMode) {
-            dropDown();
-            if (typeof onEnter === 'function') {
-                onEnter(e);
-            }
-        }
-    };
-
-    const handleMouseLeave = (e) => {
-        e.preventDefault();
-        if (!mobileMode) {
-            closeDropDown();
-            if (typeof onLeave === 'function') {
-                onLeave(e);
-            }
-        }
-    };
-
-    const handleClick = (e) => {
+    const toggleDropdown = (e) => {
         e.stopPropagation();
         if (menus && menus.length > 0) {
-            if (!droppedDown) {
-                dropDown();
-            } else {
-                closeDropDown();
-            }
+            setDroppedDown(!droppedDown);
         } else {
-            if (setSelected) {
-                setSelected(name);
-            }
-            if (closeParentDropDown) {
-                closeParentDropDown();
-            }
+            if (setSelected) setSelected(name);
+            if (closeParentDropDown) closeParentDropDown();
         }
     };
+
+
 
     return (
         <div
-            ref={menuRef}
-            onClick={handleClick}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onClick={toggleDropdown}
             id={name}
-            style={{transition: 'all .3s ease-in-out'}}
-            className={`relative flex flex-col text-heading overflow-hidden cursor-pointer shrink-0 capitalize ${
-                mobileMode ? 'w-full border-b border-gray-100' : 'flex-row items-center'
-            }`}
+            className="relative flex flex-col text-heading cursor-pointer capitalize"
         >
-            {menus && menus.length > 0 ?
-                <>
-                    <MenuText name={name} menus={menus} parentRef={parentRef} mobileMode={mobileMode} droppedDown={droppedDown}/>
-                    <div ref={dropDownRef}
-                         className={`bg-[rgb(243,244,245)] ${
-                             mobileMode ? 
-                                 'w-full overflow-hidden transition-all duration-300 ease-in-out h-0' : 
-                                 'absolute left-0 top-full w-0 h-0 custom-shadow z-40'
-                         }`}>
-                        <div ref={menusRef} className="relative flex flex-col w-full h-full overflow-hidden">
-                            {menus && menus.length > 0 && menus.map((menu, i) =>
-                                <MenuButton
-                                    key={i}
-                                    name={menu.name ? menu.name : 'null'}
-                                    link={menu.link ? menu.link : '/'}
-                                    menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}
-                                    parentRef={menuRef}
-                                    setSelected={setSelected}
-                                    onEnter={onEnter}
-                                    onLeave={onLeave}
-                                    closeParentDropDown={closeDropDown}
-                                    mobileMode={mobileMode}
-                                />
-                            )}
-                        </div>
+            {/* Main Menu Text */}
+            {menus && menus.length > 0 ? (
+                <MenuText name={name} menus={menus} parentRef={parentRef} mobileMode={mobileMode} open={droppedDown} />
+            ) : isInRouterContext ? (
+                <NavLink
+                    to={link || "/"}
+                    className={({ isActive }) =>
+                        `${isActive ? "text-[rgb(0,175,240)]" : "text-[rgb(68,71,70)]"}`
+                    }
+                    onClick={() => {
+                        if (setSelected) setSelected(name);
+                        if (closeParentDropDown) closeParentDropDown();
+                    }}
+                >
+                    <MenuText name={name} parentRef={parentRef} />
+                </NavLink>
+            ) : (
+                <MenuText name={name} parentRef={parentRef} />
+            )}
+
+            {/* Desktop Dropdown */}
+            {!mobileMode && menus && menus.length > 0 && (
+                <div
+                    className={`absolute left-0 top-full bg-[rgb(243,244,245)] custom-shadow z-40 transition-all duration-300 overflow-hidden
+            ${droppedDown ? "max-h-96 opacity-100 visible" : "max-h-0 opacity-0 invisible"}`}
+                >
+                    <div className="flex flex-col w-full">
+                        {menus.map((menu, i) => (
+                            <MenuButton
+                                key={i}
+                                name={menu.name}
+                                link={menu.link}
+                                menus={menu.menus}
+                                parentRef={parentRef}
+                                setSelected={setSelected}
+                                closeParentDropDown={() => setDroppedDown(false)}
+                            />
+                        ))}
                     </div>
-                </>
-                :
-                isInRouterContext ?
-                    <NavLink 
-                        to={link ? link : '/'} 
-                        className={({isActive}) => {
-                            return `${isActive ? 'text-[rgb(0,175,240)]' : 'text-[rgb(68,71,70)]'} ${
-                                mobileMode ? 'px-4 py-3' : ''
-                            }`
-                        }}
-                        onClick={closeParentDropDown}
-                    >
-                        <MenuText name={name} parentRef={parentRef} mobileMode={mobileMode}/>
-                    </NavLink> :
-                    <a 
-                        href={link} 
-                        className={mobileMode ? 'px-4 py-3' : ''}
-                        onClick={closeParentDropDown}
-                    >
-                        <MenuText name={name} parentRef={parentRef} mobileMode={mobileMode}/>
-                    </a>
-            }
-        </div>
-    );
-};
-
-const MenuText = ({ name, menus = [], parentRef, mobileMode }) => {
-    const [droppedDown, setDroppedDown] = useState(false);
-
-    const toggleDropdown = () => {
-        if (menus.length > 0) setDroppedDown(!droppedDown);
-    };
-
-    return (
-        <div className="flex flex-col w-full">
-            {/* Main menu row */}
-            <div
-                onClick={toggleDropdown}
-                className={`flex flex-row items-center w-full font-nunitoSansSemiBold text-sm tracking-wider px-4 py-3 capitalize cursor-pointer
-                    ${mobileMode ? 'bg-white' : ''} hover:bg-gray-100`}
-            >
-                {/* Fixed width icon placeholder */}
-                <div className="flex-shrink-0 w-6 flex justify-center">
-                    {menus && menus.length > 0 && (
-                        mobileMode
-                            ? <PiCaretDown size={16} className={`transform transition-transform ${droppedDown ? 'rotate-180' : ''}`} />
-                            : parentRef
-                            ? <PiCaretRight size={16}/>
-                            : <PiCaretDown size={16}/>
-                    )}
                 </div>
+            )}
 
-                {/* Text section */}
-                <div className="flex-1">{name}</div>
-            </div>
-
-            {/* Submenu items */}
-            {menus.length > 0 && droppedDown && (
-                <div className="flex flex-col ml-6 border-l border-gray-200">
-                    {menus.map((subMenu, idx) => (
-                        <MenuText
-                            key={idx}
-                            name={subMenu.name}
-                            menus={subMenu.menus || []}
-                            parentRef={true}
-                            mobileMode={mobileMode}
+            {/* Mobile Dropdown */}
+            {mobileMode && droppedDown && (
+                <div className="flex flex-col w-full pl-4 border-l border-gray-300">
+                    {menus.map((menu, i) => (
+                        <MenuButton
+                            key={i}
+                            name={menu.name}
+                            link={menu.link}
+                            menus={menu.menus}
+                            parentRef={parentRef}
+                            setSelected={setSelected}
+                            mobileMode={true}
                         />
                     ))}
                 </div>
@@ -508,4 +316,15 @@ const MenuText = ({ name, menus = [], parentRef, mobileMode }) => {
         </div>
     );
 };
-export default Menu;
+
+
+
+const MenuText = ({name, menus, parentRef, isCalc, mobileMode}) => {
+    return (
+        <div
+            className={`flex flex-row ${parentRef || mobileMode ? isCalc ? 'w-fit space-x-2 font-nunitoSansSemiBold' : 'w-full justify-between font-nunitoSansSemiBold' : 'font-nunitoSansBold w-fit space-x-2'} text-sm tracking-wider px-4 py-2 items-center shrink-0 capitalize`}>
+            <p className='w-fit h-fit whitespace-nowrap'>{name}</p>
+            {menus && menus.length > 0 ? parentRef ? <PiCaretRight size={16}/> : <PiCaretDown size={16}/> : <></>}
+        </div>
+    )
+}

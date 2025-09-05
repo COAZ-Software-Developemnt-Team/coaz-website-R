@@ -1,9 +1,11 @@
 import React, {useEffect,useState,useContext,useRef} from 'react'
 import { GlobalContext } from '../contexts/GlobalContext';
-import { useLocation } from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {news,events} from '../data'
 import { LiaClockSolid } from "react-icons/lia";
 import { SlLocationPin } from "react-icons/sl";
+import { FaFileVideo } from "react-icons/fa";
+import CMSSection from "./CMS";
 
 const News = () => {
     const {mainElementRef} = useContext(GlobalContext);
@@ -68,6 +70,16 @@ const News = () => {
             </div>
             <div className='relative flex flex-col space-y-8 w-full h-auto px-[10%] pb-16 shrink-0 bg-[rgb(243,244,245)]'>
                 <div className='flex w-[2px] h-24 border-l border-[rgb(204,204,204)]'/>
+                {/* Add CMS Component Here */}
+                {/*<CMS onSelect={onSelect} selected={selected} />*/}
+                <button> <FaFileVideo size={20} />
+                    <Link
+                        to="/cms"
+                        className="text-blue-600 font-jostSemi underline hover:text-blue-800 transition"
+                    >
+                        Content Management System
+                    </Link>
+                </button>
                 {news && news.length > 0 && 
                   <div className='flex flex-col w-full h-auto'>
                       <div className='flex flex-col lg:flex-row lg:space-x-8 w-full h-auto'>
@@ -443,6 +455,7 @@ return (
               <SlLocationPin size={16} className='text-[rgb(0,175,240)]'/>
               <p className='text-xs text-[rgb(0,175,240)] font-jostSemi'>{event.venue}</p>
             </div>
+            <div></div>
         </div>
     </div>
 )

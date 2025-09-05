@@ -98,7 +98,7 @@ const About = () => {
                         </p>
                         <p className="text-[rgb(85,85,85)] text-lg font-jostSemi">
                             Our aim is to serve as the Voice and governing professional body for Clinical
-                            Officers and mid-level Clinical practioners, promoting their
+                            Officers and mid-level Clinical practitioners, promoting their
                             dignity, rights, training, regulatory compliance, and contribution
                             to health and national development
                         </p>

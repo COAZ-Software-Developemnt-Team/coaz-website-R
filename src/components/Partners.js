@@ -1,5 +1,4 @@
 import React,{useEffect,useState,useRef} from 'react'
-/* import {CIHandShake} from "../CoazIcons" */
 import { partners } from '../data';
 
 const Partners = () => {

@@ -1,4 +1,4 @@
-import {Routes, Route} from 'react-router-dom';
+import {Routes, Route,Router,Navigate} from 'react-router-dom';
 import React, {useState, useEffect} from 'react';
 import './App.css';
 import './index.css'
@@ -16,6 +16,9 @@ import News from './components/News';
 import Organisation from './components/Organisation';
 import Membership from './components/Membership';
 import More from "./components/More";
+import Login from "./components/Login";
+import CMSSection from "./components/CMS";
+
 
 
 axios.defaults.baseURL = 'http://localhost:8080/api/';
@@ -38,22 +41,6 @@ const findMenu = (menu, link) => {
     return null;
 }
 
-const getTextWidth = (text, font, fontSize) => {
-    let span = document.createElement("span");
-    document.body.appendChild(span);
-    span.style.fontFamily = font;
-    span.style.fontSize = fontSize + "px";
-    span.style.height = 'auto';
-    span.style.width = 'auto';
-    span.style.position = 'absolute';
-    span.style.whiteSpace = 'no-wrap';
-    span.innerHTML = text;
-
-    let width = Math.ceil(span.clientWidth);
-    document.body.removeChild(span);
-    return width;
-}
-
 const createRoute = (menu, Element, key) => {
     let route = null;
     if (menu.menus) {
@@ -73,6 +60,7 @@ const createRoute = (menu, Element, key) => {
 }
 
 function App() {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [screenSize, setScreenSize] = useState('lg');
     const [showDropMainMenu, setShowDropMainMenu] = useState(false);
     const [dialog, setDialog] = useState(null);
@@ -116,6 +104,12 @@ function App() {
                         <Route path='objective' element={<Objective/>}/>
                         <Route path='news' element={<News/>}/>
                         <Route path='readmore' element={<More/>}/>
+                        {/* 🔑 Login & CMS routes */}
+                        <Route path='login' element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+                        <Route
+                            path='cms'
+                            element={isLoggedIn ? <CMSSection /> : <Navigate to="/login" />}
+                        />
                     </Route>
                 </Routes>
                 {dialog && dialog.show && dialog.Component && (
