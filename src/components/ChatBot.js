@@ -1,59 +1,45 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaRobot, FaTimes, FaPaperPlane } from "react-icons/fa";
 
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { sender: "bot", text: "Hi 👋 I’m your assistant! How can I help you today?" }
+        { sender: "bot", text: "Hi 👋 I’m your assistant! Ask me anything." }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [knowledgeBase, setKnowledgeBase] = useState({
-        "about us": "We are an organization that provides advocacy for the clinicians in Zambia",
-        "contact": "Email: info@coaz.com | Phone: +260761234390",
-        "services": "We offer Advocacy and Training with our CPD Platform",
-        "pricing": "Our pricing varies based on the type of membership package you select",
-        "registration": "If you'd like to register, our top right corner has the register button and it'll lead you there!",
-        "login": "If you'd like to login, our top right corner has the login button!"
-    });
 
-    // Function to generate AI-like responses
-    const generateResponse = (question) => {
-        const lowerQuestion = question.toLowerCase();
+    // Call backend to fetch answer from Constitution
+    const generateResponse = async (question) => {
+        try {
+            const res = await fetch("http://localhost:8080/api/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question }),
+            });
 
-        // Keyword matching for demo purposes
-        if (lowerQuestion.includes("about") || lowerQuestion.includes("who")) {
-            return knowledgeBase["about us"];
-        } else if (lowerQuestion.includes("contact") || lowerQuestion.includes("email")) {
-            return knowledgeBase["contact"];
-        } else if (lowerQuestion.includes("service") || lowerQuestion.includes("offer")) {
-            return knowledgeBase["services"];
-        } else if (lowerQuestion.includes("price") || lowerQuestion.includes("cost")) {
-            return knowledgeBase["pricing"];
-        } else if (lowerQuestion.includes("register") || lowerQuestion.includes("tool")) {
-            return knowledgeBase["registration"];
-        } else if (lowerQuestion.includes("login") || lowerQuestion.includes("tool")) {
-            return knowledgeBase["login"];
+            const data = await res.json();
+            return data.answer || "Sorry, I couldn’t find anything in the Constitution about that.";
+        } catch (error) {
+            console.error("Error fetching from backend:", error);
+            return "⚠️ Something went wrong while fetching information.";
         }
-
-        return "I'm sorry, I couldn't find information about that topic. Could you please rephrase your question or ask about something else?";
     };
 
     const toggleChat = () => setIsOpen(!isOpen);
-    const handleSend = () => {
+
+    const handleSend = async () => {
         if (!input.trim()) return;
 
         const userMessage = { sender: "user", text: input };
-        setMessages([...messages, userMessage]);
+        setMessages((prev) => [...prev, userMessage]);
         setInput("");
         setIsLoading(true);
 
-        // Simulate AI processing
-        setTimeout(() => {
-            const response = generateResponse(input);
-            setMessages(prev => [...prev, { sender: "bot", text: response }]);
-            setIsLoading(false);
-        }, 1000);
+        const response = await generateResponse(input);
+
+        setMessages((prev) => [...prev, { sender: "bot", text: response }]);
+        setIsLoading(false);
     };
 
     return (
@@ -65,6 +51,7 @@ const ChatBot = () => {
             >
                 {isOpen ? <FaTimes size={20} /> : <FaRobot size={24} />}
             </button>
+
             {/* Chat Popup */}
             {isOpen && (
                 <div className="fixed bottom-20 right-6 w-80 bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col z-50">
@@ -72,6 +59,7 @@ const ChatBot = () => {
                     <div className="bg-[rgb(0,175,240)] text-white p-3 rounded-t-2xl font-bold">
                         AI Assistant
                     </div>
+
                     {/* Messages */}
                     <div className="flex-1 p-3 overflow-y-auto max-h-64 space-y-2">
                         {messages.map((msg, idx) => (
@@ -92,6 +80,7 @@ const ChatBot = () => {
                             </div>
                         )}
                     </div>
+
                     {/* Input */}
                     <div className="flex items-center border-t border-gray-200 p-2">
                         <input

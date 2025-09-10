@@ -185,14 +185,14 @@ const Statistics = () => {
 
         // Active Members
         fetch("https://coaz.org:8085/coaz/api/user/count/active")
-            .then(res => res.text()) // Parse response as JSON
-            .then(text => setActiveMembers(parseInt(text))) // Access count property
+            .then(res => res.text())
+            .then(text => setActiveMembers(parseInt(text)))
             .catch(err => console.error("Error fetching active members:", err));
 
         // Active Districts
         fetch("https://coaz.org:8085/coaz/api/district/count")
-            .then(res => res.text()) // Add this if API returns JSON
-            .then(text => setActiveDistricts(parseInt(text))) // Use data.count
+            .then(res => res.text())
+            .then(text => setActiveDistricts(parseInt(text)))
             .catch(err => console.error("Error fetching active districts:", err));
     }, []);
 
@@ -267,7 +267,7 @@ const Services = () => {
     return (
         <div className='flex flex-col w-full h-fit px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%] space-y-12'>
             <div className='flex flex-col w-full items-center space-y-6'>
-                <p className='text-heading text-center text-[34px] font-nunitoSansBold'>Our Best Services</p>
+                <p className='text-heading text-center text-[34px] font-nunitoSansBold'>Our Services</p>
                 <p className='w-full sm:w-[450px] md:w-[610px] px-4 lg:w-[730px] text-[16px]/[28px] text-gray text-center font-nunitoSansRegular'>
 
                 </p>
@@ -277,16 +277,17 @@ const Services = () => {
                     Icon={CIPortal}
                     title='CPD Platform'
                     description='Our Learning Platform For Our Members'
+
                 />
                 <Service
                     Icon={CIMedicalInsurance}
                     title='Health Insurance'
-                    description=''
+                    description='Protecting Your Health, Securing Your Future.'
                 />
                 <Service
                     Icon={CITrophy}
                     title='Awards & Certificates'
-                    description=''
+                    description='To honor outstanding contributions in Healthcare '
                 />
                 <Service
                     Icon={CIResources}
@@ -295,8 +296,8 @@ const Services = () => {
                 />
                 <Service
                     Icon={CISearch}
-                    title='Research Publication'
-                    description=''
+                    title='Research & Innovation Hub'
+                    description='Advancing Evidence-Based Healthcare in Zambia '
                 />
                 <Service
                     Icon={CISuccess}

@@ -31,6 +31,30 @@ db.getConnection((err, conn) => {
 
 // API Endpoints
 // GET all content
+// POST: Ask a question about the constitution
+app.post('/api/ask', (req, res) => {
+    const { question } = req.body;
+    if (!question) return res.status(400).json({ error: "No question provided" });
+
+    db.query(
+        "SELECT section FROM constitution WHERE MATCH(section) AGAINST(? IN NATURAL LANGUAGE MODE) LIMIT 3",
+        [question],
+        (err, results) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            if (results.length === 0) {
+                return res.json({
+                    answer: "Sorry, I couldn’t find anything in the constitution about that."
+                });
+            }
+
+            // Merge top results
+            const answer = results.map(r => r.section).join("\n\n");
+            res.json({ answer });
+        }
+    );
+});
+
 app.get('/api/content', (req, res) => {
     db.query('SELECT * FROM content', (err, results) => {
         if (err) return res.status(500).json({ error: err.message });

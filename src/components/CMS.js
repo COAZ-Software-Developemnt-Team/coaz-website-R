@@ -13,7 +13,7 @@ const CMSSection = () => {
         const fetchContents = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://localhost:8080/api/content/');
+                const response = await fetch('http://coaz.org/api/content/');
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 setContents(data);
@@ -34,7 +34,7 @@ const CMSSection = () => {
         try {
             if (editingId) {
                 // Update existing content
-                const response = await fetch(`http://localhost:8080/api/content/${editingId}`, {
+                const response = await fetch(`http://coaz.org/api/content/${editingId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newContent),
@@ -46,7 +46,7 @@ const CMSSection = () => {
                 setContents(contents.map(c => c.id === editingId ? updatedContent : c));
             } else {
                 // Add new content
-                const response = await fetch('http://localhost:8080/api/content/', {
+                const response = await fetch('http://coaz.org/api/content/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newContent),
@@ -59,7 +59,7 @@ const CMSSection = () => {
             }
 
             // Refresh content list
-            const response = await fetch('http://localhost:8080/api/content');
+            const response = await fetch('http://coaz.org/api/content');
             const data = await response.json();
             setContents(data);
             console.log("Content added:", data);
@@ -86,7 +86,7 @@ const CMSSection = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`http://localhost:8080/api/content/${id}`, {
+            const response = await fetch(`http://coaz.org/api/content/${id}`, {
                 method: 'DELETE',
             });
 
@@ -164,7 +164,7 @@ const CMSSection = () => {
                 )}
                 <div className="flex justify-center mt-4">
                     <Link
-                        to="/cms"
+                        to="/News"
                         className="text-blue-600 font-jostSemi underline hover:text-blue-800 transition"
                     >
                     </Link>

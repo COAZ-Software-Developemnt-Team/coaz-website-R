@@ -20,6 +20,7 @@
     "loaders.css": "^0.1.2",
     "os-browserify": "^0.3.0",
     "papaparse": "^5.4.1",
+    "pdf-parse": "^1.1.1",
     "qs": "^6.13.0",
     "react": "^18.2.0",
     "react-csv-importer": "^0.8.1",
