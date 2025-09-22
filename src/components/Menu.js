@@ -9,6 +9,7 @@ import Search from "../components/Search";
 import { renderToStaticMarkup } from 'react-dom/server'
 import { useInRouterContext, NavLink } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
+
 const calcWidth = (Component) => {
     if (!Component) {
         return 0;
@@ -24,24 +25,6 @@ const calcWidth = (Component) => {
     let width = Math.ceil(span.clientWidth);
     document.body.removeChild(span);
     return width;
-}
-
-const calcSize = (Component) => {
-    if (!Component) {
-        return {width: 0, height: 0};
-    }
-    let span = document.createElement("span");
-    document.body.appendChild(span);
-    span.style.height = 'fit';
-    span.style.width = 'fit-content';
-    span.style.position = 'absolute';
-    span.style.overflow = 'hidden';
-    span.style.whiteSpace = 'no-wrap';
-    span.innerHTML = renderToStaticMarkup(Component);
-    let width = Math.ceil(span.clientWidth);
-    let height = Math.ceil(span.clientHeight);
-    document.body.removeChild(span);
-    return {width: width, height: height};
 }
 
 const Menu = () => {
@@ -173,7 +156,7 @@ const Menu = () => {
             </div>
             {/*DESKTOP MENU*/}
             <div ref={menuButtonsRef}
-                 className={`hidden md:flex py-2 w-full h-16 sm:h-16 px-2 sm:px-4 items-center z-10 bg-white shrink-0 shadow-lg`}>
+                 className={`hidden md:flex py-2 w-full h-16 sm:h-16 px-2 sm:px-4 items-center z-50 bg-white shrink-0 shadow-lg`}>
                 <div className="relative hidden sm:flex flex-row w-full h-fit items-center justify-center">
                     {navbarMenus && navbarMenus.length > 0 && navbarMenus.map((menu, i) =>
                         <MenuButton
@@ -188,7 +171,7 @@ const Menu = () => {
                 </div>
             </div>
             {/*Mobile Top Bar */}
-            <div className="relative w-full h-fit">
+            <div className="relative w-full h-fit md:hidden">
                 <div
                     className="relative flex flex-row w-full h-[56px] px-4 bg-white gap-2 rounded-full items-center justify-between z-10 overflow-hidden"
                     style={{ marginTop: '-10px' }}
@@ -246,91 +229,10 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
         }
     };
 
-    const dropDown = () => {
-        if (!droppedDown) {
-            if (menuRef.current && dropDownRef.current && menusRef.current) {
-                let parent = menuRef.current;
-                do {
-                    parent = parent.parentElement;
-                } while (parent && parent.tagName.toLowerCase() != 'header');
-                if (parent) {
-                    let size = calcSize(
-                        <div className="flex flex-col w-fit h-fit px-4 overflow-visible">
-                            {menus && menus.length > 0 && menus.map((menu, i) =>
-                                <MenuText key={i} name={menu.name} menus={menu.menus} parentRef={menuRef} isCalc={true}/>
-                            )}
-                        </div>
-
-                    );
-                    let viewWidth = parent.clientWidth;
-                    let menuRect = menuRef.current.getBoundingClientRect();
-                    menuRef.current.style.overflow = 'visible';
-                    if (parentRef) {
-                        dropDownRef.current.style.top = '0';
-                        if ((menuRect.right + size.width) > viewWidth) {
-                            dropDownRef.current.style.left = (0 - size.width) + 'px';
-                        } else {
-                            dropDownRef.current.style.left = '100%';
-                        }
-                    } else {
-                        dropDownRef.current.style.top = '100%';
-                    }
-                    dropDownRef.current.style.width = size.width + 'px';
-                    dropDownRef.current.style.opacity = '1';
-                    dropDownRef.current.animate({height: [0, size.height + 'px']}, {
-                        duration: 500,
-                        easing: 'ease-in-out'
-                    }).addEventListener('finish', () => {
-                        dropDownRef.current.style.height = size.height + 'px';
-                        menusRef.current.style.overflow = 'visible';
-                    });
-                }
-            }
-            setDroppedDown(true);
-        }
-    }
-
-    const closeDropDown = () => {
-        setDroppedDown(false);
-        if (menuRef.current && dropDownRef.current) {
-            dropDownRef.current.animate({opacity: [1, 0]}, {duration: 500}).addEventListener('finish', () => {
-                dropDownRef.current.style.width = '0';
-                dropDownRef.current.style.height = '0';
-                dropDownRef.current.style.transition = 'none';
-                menuRef.current.style.overflow = 'hidden';
-                menusRef.current.style.overflow = 'hidden';
-            });
-        }
-
-    }
-
 
   return (
-    // <div
-    //   ref={menuRef}
-    //   onClick={(e) => {
-    //     e.stopPropagation();
-    //     if(menus && menus.length > 0) {
-    //       if(!droppedDown) {
-    //         dropDown();
-    //       } else {
-    //         closeDropDown();
-    //       }
-    //     } else {
-    //         if(setSelected) {
-    //             setSelected(name);
-    //         }
-    //         if(closeParentDropDown) {
-    //             closeParentDropDown();
-    //         }
-    //     }
-    //   }}
-    //
-    //         id={name}
-    //         style={{transition: 'all .5s ease-in-out'}}
-    //         className={`relative flex flex-row text-heading items-center overflow-hidden cursor-pointer shrink-0 capitalize`}
-    //     >
-      <div className="w-full">
+
+      <div ref={menuRef} className="relative w-full">
           {/* Main button */}
           <div
               onClick={toggleDropDown}
@@ -356,35 +258,6 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
               )}
           </div>
 
-{/*          {menus && menus.length > 0 ?*/}
-{/*                <>*/}
-{/*                    <MenuText name={name} menus={menus} parentRef={parentRef} mobileMode={mobileMode}/>*/}
-{/*                    <div ref={dropDownRef}*/}
-{/*                         className="absolute left-0 top-full w-0 h-0 bg-[rgb(243,244,245)] custom-shadow z-40">*/}
-{/*                        <div ref={menusRef} className="relative flex flex-col w-full h-full overflow-hidden">*/}
-{/*                            {menus && menus.length > 0 && menus.map((menu, i) =>*/}
-{/*                                <MenuButton*/}
-{/*                                    key={i}*/}
-{/*                                    name={menu.name ? menu.name : 'null'}*/}
-{/*                                    link={menu.link ? menu.link : '/'}*/}
-{/*                                    menus={menu.menus && menu.menus.length > 0 ? menu.menus : null}*/}
-{/*                                    parentRef={menuRef}*/}
-{/*                                    setSelected={setSelected}*/}
-{/*                                />*/}
-{/*                            )}*/}
-{/*                        </div>*/}
-{/*                    </div>*/}
-{/*                </>*/}
-{/*                :*/}
-{/*                isInRouterContext?*/}
-{/*                <NavLink to={link ? link : '/'} className={({isActive}) => {return `${isActive?'text-[rgb(0,175,240)]':'text-[rgb(68,71,70)]'}`}}>*/}
-{/*                    <MenuText name={name} parentRef={parentRef}/>*/}
-{/*                </NavLink>:*/}
-{/*                <MenuText name={name} parentRef={parentRef}/>*/}
-{/*            }*/}
-{/*        </div>*/}
-{/*    );*/}
-{/*};*/}
           {mobileMode && menus && droppedDown && (
               <div className="ml-4 border-l border-gray-200">
                   {menus.map((menu, i) => (
@@ -403,7 +276,11 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
 
           {/* Submenu for desktop (unchanged) */}
           {!mobileMode && menus && droppedDown && (
-              <div className="absolute left-0 top-full bg-gray-100 shadow-md z-40">
+              <div
+                  ref={dropDownRef}
+                      className="absolute left-0 top-full bg-white shadow-lg rounded-md z-10"
+              >
+                  <div ref={menusRef} className="flex flex-col w-full">
                   {menus.map((menu, i) => (
                       <MenuButton
                           key={i}
@@ -415,6 +292,7 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
                           closeParentDropDown={closeParentDropDown}
                       />
                   ))}
+              </div>
               </div>
           )}
       </div>

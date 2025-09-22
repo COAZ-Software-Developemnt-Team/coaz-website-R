@@ -18,6 +18,9 @@ import Membership from './components/Membership';
 import More from "./components/More";
 import Login from "./components/Login";
 import CMSSection from "./components/CMS";
+import CPD from './components/CPD';
+import Development from "./components/Development";
+
 
 
 
@@ -101,7 +104,9 @@ function App() {
                         {createRoute(organisation, Organisation)}
                         {createRoute(membership, Membership)}
                         <Route path='about' element={<About/>}/>
+                        <Route path='cpd' element={<CPD/>}/>
                         <Route path='objective' element={<Objective/>}/>
+                        <Route path='development' element={<Development/>}/>
                         <Route path='news' element={<News/>}/>
                         <Route path='readmore' element={<More/>}/>
                         {/* 🔑 Login & CMS routes */}

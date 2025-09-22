@@ -18,6 +18,9 @@ import {MdSubdirectoryArrowRight} from 'react-icons/md';
 import {news} from '../data'
 import {IoIosArrowRoundForward} from 'react-icons/io';
 import ChatBot from '../components/ChatBot';
+import { Link } from "react-router-dom";
+import Careers from '../components/Careers';
+
 const scrollCallbacks = [];
 
 const Home = () => {
@@ -184,7 +187,7 @@ const Statistics = () => {
             .catch(err => console.error("Error fetching registered members:", err));
 
         // Active Members
-        fetch("https://coaz.org:8085/coaz/api/user/count/active")
+        fetch("--")
             .then(res => res.text())
             .then(text => setActiveMembers(parseInt(text)))
             .catch(err => console.error("Error fetching active members:", err));
@@ -273,37 +276,48 @@ const Services = () => {
                 </p>
             </div>
             <div className='grid grid-cols-1 lg:grid-cols-3 overflow-hidden'>
-                <Service
-                    Icon={CIPortal}
-                    title='CPD Platform'
-                    description='Our Learning Platform For Our Members'
-
-                />
+                <Link to="/cpd">
+                    <Service
+                        Icon={CIPortal}
+                        title="CPD Platform"
+                        description="Learn. Grow. Excel."
+                    />
+                </Link>
+                <Link to="/services/health_insurance">
                 <Service
                     Icon={CIMedicalInsurance}
                     title='Health Insurance'
                     description='Protecting Your Health, Securing Your Future.'
                 />
+                    </Link>
+<Link to="/services/awards_and_certificates">
                 <Service
                     Icon={CITrophy}
                     title='Awards & Certificates'
                     description='To honor outstanding contributions in Healthcare '
                 />
+</Link>
+                <Link to="/services/resource_banking">
                 <Service
                     Icon={CIResources}
                     title='Resource Banking'
                     description=''
                 />
+                </Link>
+                <Link to="/services/research_and_innovation">
                 <Service
                     Icon={CISearch}
                     title='Research & Innovation Hub'
                     description='Advancing Evidence-Based Healthcare in Zambia '
                 />
+                </Link>
+                <Link to="/services/careers">
                 <Service
                     Icon={CISuccess}
                     title='Careers'
                     description=''
                 />
+            </Link>
             </div>
         </div>
     )

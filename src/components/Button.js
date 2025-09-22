@@ -2,12 +2,21 @@ import React from 'react'
 
 const Button = ({text,onClick}) => {
   return (
-    <button style={{transition:'all .2s ease-in-out'}} 
-        onClick={onClick} 
-        className='w-fit h-fit px-8 py-4 font-nunitoSansRegular text-white bg-theme rounded-full hover:shadow-[inset_0_0_0_1px_var(--color-theme)] hover:text-theme hover:bg-transparent cursor-pointer'>
+      <button
+          onClick={onClick}
+          style={{
+            backgroundColor: "#3498db",
+            color: "white",
+            padding: "10px 20px",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontSize: "16px",
+          }}
+      >
         {text}
-    </button>
-  )
-}
+      </button>
+  );
+};
 
 export default Button

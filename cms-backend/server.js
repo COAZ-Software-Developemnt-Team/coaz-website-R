@@ -1,105 +1,58 @@
-const express = require('express');
-const mysql = require('mysql2');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const pdf = require("pdf-parse");
 
-// Initialize app
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MySQL Database Configuration
-const db = mysql.createPool({
-    host: 'localhost',
-    port: 3306,
-    user: 'root',
-    password: '',
-    database: 'coaz_website',
-    // waitForConnections: true,
-    // connectionLimit: 10
+let constitution = [];
 
-});
+// Load and parse the constitution PDF
+async function loadConstitution() {
+    const path = `${__dirname}/constitution.pdf`;
 
-// Test database connection
-db.getConnection((err, conn) => {
-    if (err) {
-        console.error('Database connection failed:', err.stack);
+    if (!fs.existsSync(path)) {
+        console.error("❌ constitution.pdf not found!");
         return;
     }
-    console.log('Connected to MySQL database');
-    conn.release(); // Release connection back to pool
-});
 
-// API Endpoints
-// GET all content
-// POST: Ask a question about the constitution
-app.post('/api/ask', (req, res) => {
+    const dataBuffer = fs.readFileSync(path);
+    const data = await pdf(dataBuffer);
+
+    // Split into paragraphs
+    constitution = data.text
+        .split("\n")
+        .map((p) => p.trim())
+        .filter((p) => p.length > 20);
+
+    console.log(`✅ Loaded ${constitution.length} sections from constitution`);
+}
+
+app.post("/api/ask", (req, res) => {
     const { question } = req.body;
     if (!question) return res.status(400).json({ error: "No question provided" });
 
-    db.query(
-        "SELECT section FROM constitution WHERE MATCH(section) AGAINST(? IN NATURAL LANGUAGE MODE) LIMIT 3",
-        [question],
-        (err, results) => {
-            if (err) return res.status(500).json({ error: err.message });
-
-            if (results.length === 0) {
-                return res.json({
-                    answer: "Sorry, I couldn’t find anything in the constitution about that."
-                });
-            }
-
-            // Merge top results
-            const answer = results.map(r => r.section).join("\n\n");
-            res.json({ answer });
-        }
+    // Simple keyword search
+    const results = constitution.filter((p) =>
+        p.toLowerCase().includes(question.toLowerCase())
     );
+
+    if (results.length === 0) {
+        return res.json({
+            answer: "Sorry, I couldn’t find anything in the constitution about that.",
+        });
+    }
+
+    // Return top 3 matches
+    const answer = results.slice(0, 3).join("\n\n");
+    res.json({ answer });
 });
 
-app.get('/api/content', (req, res) => {
-    db.query('SELECT * FROM content', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
+// Start server after loading constitution
+loadConstitution().then(() => {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// POST new content
-app.post('/api/content', (req, res) => {
-    const { title, body } = req.body;
-    db.query(
-        'INSERT INTO content (title, body) VALUES (?, ?)',
-        [title, body],
-        (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: result.insertId, title, body });
-        }
-    );
-});
-
-// PUT update content
-app.put('/api/content/:id', (req, res) => {
-    const { id } = req.params;
-    const { title, body } = req.body;
-    db.query(
-        'UPDATE content SET title = ?, body = ? WHERE id = ?',
-        [title, body, id],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.sendStatus(200);
-        }
-    );
-});
-
-// DELETE content
-app.delete('/api/content/:id', (req, res) => {
-    const { id } = req.params;
-    db.query('DELETE FROM content WHERE id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.sendStatus(204);
-    });
-});
-
-// Start server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
 });

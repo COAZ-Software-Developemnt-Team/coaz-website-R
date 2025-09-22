@@ -2,135 +2,108 @@ import React from 'react'
 import { GiMegaphone } from "react-icons/gi";
 import { FaRegCircleDot } from "react-icons/fa6";
 import { GoDotFill } from "react-icons/go";
+import ReadMoreSection from "./ReadMore";
 
 const AdvocacyInHealth = () => {
-  return (
-    <div className='flex flex-col space-y-16 w-full h-auto'>
-        <div className='flex flex-col space-y-4 w-full h-auto'>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    JUDICIAL ADVOCACY
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    HUMAN RESOURCES FOR HEALTH ADVOCACY
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    LOCAL GOVERNANCE ADVOCACY
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    STATE ADVOCACY
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    PUBLIC HEALTH ADVOCACY
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <GiMegaphone size={24} className='text-[rgb(85,85,85)] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)] uppercase'>
-                    ACCESS TO HEALTH CARE
-                </p>
-            </div>
-        </div>
-        <div className='flex flex-col space-y-8 w-full h-auto'>
-            <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
-                STATE ADVOCACY 
-            </p>
-            <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                At the state level, the COAZ shapes the policy of influential national policymaking, partners with outside 
-                experts and stakeholder groups and influences the enactment and/or defeat of state legislation and regulation
-            </p>
-            <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)]'>
-                Our State legislative and regulatory priorities
-            </p>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative Amendment to the medicines and Allied substances act
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative amendment to the Health Professions council of Zambia to reflect communities of practice, 
-                    that considers of clinical practitioners' community of practice
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative amendment to the food and nutrition act of 2020
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative enactment of the National Health services act
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative enactment of the Clinical Officers bill
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Legislative enactment of Affordable Care Act
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Opening regulatory documents for Clinical officer specialists with HPCZ
-                </p>
-            </div>
-        </div>
-        <div className='flex flex-col space-y-8 w-full h-auto'>
-            <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
-                ACCESS TO HEALTH CARE 
-            </p>
-            <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                The COAZ works tirelessly to preserve health care access and coverage for Zambians across the nation, 
-                especially the country’s most vulnerable and underserved patient populations
-            </p>
-            <p className='text-lg tracking-wider font-jostSemi text-[rgb(85,85,85)]'>
-                Our current focus on access to Health care include: 
-            </p>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    National health insurance (NHIMA) coverage for all Zambians
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Freedom of choice
-                </p>
-            </div>
-            <div className='flex flex-row space-x-4'>
-                <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
-                <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                    Freedom of practice for clinical officers to increase universal access for patients
-                </p>
-            </div>
-        </div>
-    </div>
-  )
-}
 
-export default AdvocacyInHealth
+  return (
+        <div>
+          <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+            COAZ is committed to advancing health insurance policies in Zambia, ensuring that Clinical Officers and the communities they serve are not left behind.
+            <p>
+              Our advocacy focuses on four key areas:
+            </p>
+            <ReadMoreSection>
+              <h3 className="text-xl md:text-xl font-bold">National Health Insurance Coverage</h3>
+              <div className="flex flex-col space-y-4 mt-6 w-full">
+                <div className="flex flex-row space-x-4">
+                  <GoDotFill
+                      size={16}
+                      className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                  />
+                  <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                    Engaging the government to expand NHIMA benefits to reflect the needs of frontline health workers and rural populations.
+                    <a
+                        href="https://www.nhima.co.zm/membership/benefits-packages"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline text-blue-600"
+                    >
+                      Click Here
+                    </a>
+                  </p>
+                </div>
+                <div className="flex flex-col space-y-4 mt-6 w-full">
+                  <div className="flex flex-row space-x-4">
+                    <GoDotFill
+                        size={16}
+                        className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                    />
+                    <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                      	Advocating for inclusive coverage for underrepresented health facilities.                                     </p>
+                  </div>
+                  <h3 className="text-xl md:text-xl font-bold">Improved Service Access</h3>
+
+                  <div className="flex flex-col space-y-4 mt-6 w-full">
+                    <div className="flex flex-row space-x-4">
+                      <GoDotFill
+                          size={16}
+                          className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                      />
+                      <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                        Expanding accreditation of rural and peri-urban facilities so that members in remote areas can access quality services without traveling long distances.                                     </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-4 mt-6 w-full">
+                    <div className="flex flex-row space-x-4">
+                      <GoDotFill
+                          size={16}
+                          className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                      />
+                      <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                        Supporting integration of telemedicine and mobile health solutions.                                     </p>
+                    </div>
+                  </div>
+                  <h3 className="text-xl md:text-xl font-bold">Transparent Claims & Accountability</h3>
+
+                  <div className="flex flex-col space-y-4 mt-6 w-full">
+                    <div className="flex flex-row space-x-4">
+                      <GoDotFill
+                          size={16}
+                          className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                      />
+                      <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                        Working with policymakers to simplify claims processing, reduce delays, and increase trust in insurance management systems.                                     </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-4 mt-6 w-full">
+                    <div className="flex flex-row space-x-4">
+                      <GoDotFill
+                          size={16}
+                          className="text-[rgb(85,85,85)] mt-[5px] shrink-0"
+                      />
+                      <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                        Encouraging regular reporting and transparency from insurers and NHIMA.                                     </p>
+                    </div>
+                    <p className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
+                      Through these advocacy efforts, COAZ continues to represent the voice of Clinical Officers, shaping a fairer and more accessible health insurance system for all Zambians.
+                    </p>
+                    <h3 className="text-xl md:text-xl font-bold">COAZ Group Health Insurance Scheme </h3>
+                    <a
+                        href="/association/member_benefits"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline text-blue-600"
+                    >
+                      Click Here
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </ReadMoreSection>
+          </p>
+        </div>
+    )
+  }
+
+  export default AdvocacyInHealth

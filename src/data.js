@@ -6,6 +6,9 @@ import ReadMoreSection from "./components/ReadMore";
 import { Link } from "react-router-dom";
 import {GoDotFill} from "react-icons/go";
 import React from "react";
+import Research from "./components/Research";
+import CPD from "./components/CPD";
+import Health from "./components/Health";
 
 
 
@@ -204,14 +207,14 @@ export const association = {
         },
         {
           image:'/images/img_8.jpg',
-          name:'Advocacy in Health Care',
+          name:'Advocacy on Health Insurance in Zambia',
           link:'/association/advocacy_in_health_care',
           content:'At the state level, the COAZ shapes the policy of influential national policymaking, partners with outside '+
                 'experts and stakeholder groups and influences the enactment and/or defeat of state legislation and regulation'
         },
         {
           image:'/images/img_5.jpg',
-          name:'Member Benefits',
+          name:'Member Health Insurance',
           link:'/association/member_benefits',
           content:'Joining the nation’s largest Health professional Organization in Zambia has considerable benefits. In addition '+
                 'to opportunities to shape the future of health care, COAZ membership benefits include exclusive access to savings'+
@@ -227,12 +230,15 @@ export const services = {
         {
             image:'/images/img_49.jpg',
             name:'Learning And CPD',
-            link:'/ms'
+            link:'/cpd',
+            Component: CPD
+
         },
         {
-            image:'/images/img_9.jpg',
+            image:'/images/image.jpg',
             name:'Health Insurance',
-            link:'/services/healthinsurance'
+            link:'/services/health_insurance',
+            Component: Health
         },
         {
             image:'/images/bg_8.jpg',
@@ -247,8 +253,10 @@ export const services = {
         },
         {
             image:'/images/img_6.jpg',
-            name:'Research and Journal Publication',
-            link:'/services/research_and_journal_publication'
+            name:'Research and Innovation Hub',
+            link:'/services/research_and_innovation',
+            Component: Research
+
         },
         {
             image:'/images/img_32.jpg',
@@ -256,7 +264,8 @@ export const services = {
             link:'/services/partners',
             Component: Partners
         },
-        {image:'/images/img_47.jpg',
+        {
+            image:'/images/img_47.jpg',
             name:'Careers',
             link:'/services/careers',
             Component: Careers
@@ -886,23 +895,30 @@ export const membership = {
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Eligibility Criteria
                     </p>
-                    <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                        Full Membership within the Clinical Officers Association of Zambia (COAZ) shall be individuals who meet 
-                        the following criteria:
-                    </p>
+
+                    <p className='text-lg tracking-wider mt-2 font-jostBook text-[rgb(85,85,85)]'>
+                        A person shall qualify for Full Membership of the Association if they;                   </p>
                     <div className='flex flex-row space-x-4'>
                         <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Successful Completion: Prospective Full Members must have successfully completed accredited clinical 
-                            officer training programs recognized by relevant regulatory bodies
+                            Hold a valid qualification as a Clinical Officer or mid-level clinical practitioner recognized by the Health Professions Council of Zambia (HPCZ).
                         </p>
                     </div>
                     <div className='flex flex-row space-x-4'>
                         <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Valid Practicing license: As a prerequisite, individuals seeking Full Membership must hold valid 
-                            practicing license issued by the Health Professions council of Zambia
+                            Possess a current license or registration to practice clinical medicine in Zambia.
                         </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            	Demonstrate good professional standing, with no outstanding disciplinary sanctions or unresolved ethical complaints.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Have paid the prescribed membership fees and complied with any registration or administrative requirements of the Association.                        </p>
                     </div>
                 </div>,
             RightsAndPrivileges:() => (
@@ -1036,10 +1052,26 @@ export const membership = {
                         Eligibility Criteria
                     </p>
                     <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                        Associate Membership is designated for individuals engaged in professions allied to clinical medicine, including 
-                        but not limited to medical researchers, healthcare administrators, or educators. The eligibility criteria for 
-                        Associate Membership shall be defined in the Association's guidelines
+                        Eligibility for Associate Membership shall include persons who;
                     </p>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Are qualified Clinical Officers or mid-level clinical practitioners not currently engaged in active clinical practice.
+                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Are Clinical Officers practicing outside the jurisdiction of Zambia.
+                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Meet any additional criteria established by the National Executive Committee.
+                        </p>
+                    </div>
                 </div>,
             RightsAndPrivileges:() =>
                 <ReadMoreSection title="Rights And Privileges">
@@ -1080,10 +1112,24 @@ export const membership = {
                         Eligibility Criteria
                     </p>
                     <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                        Student Membership is open to individuals actively enrolled in recognized clinical officer/clinical 
-                        Sciences/clinical medicine training programs. The eligibility requirements and conditions for 
-                        Student Membership shall be explicitly set forth in the Association's regulations
+                        Student Membership shall be open to individuals who;
                     </p>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Are formally enrolled in an accredited institution offering Clinical Officer training or equivalent mid-level clinical education.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Subscribe to and uphold the values and objectives of the Association.
+                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Comply with any registration procedures and payment of applicable fees as determined by the Association.                        </p>
+                    </div>
                 </div>,
             RightsAndPrivileges:() =>
                 <ReadMoreSection title="Rights And Privileges">
@@ -1120,14 +1166,26 @@ export const membership = {
             link:'/membership/life_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
-                    <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
-                        Eligibility Criteria
+                    <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                        Life membership may be conferred upon a Full Member who;
                     </p>
-                    <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                        Life Membership may be conferred upon Full Members in recognition of exceptional contributions to 
-                        COAZ or the broader field of clinical medicine. The specific criteria for conferring Life 
-                        Membership shall be outlined in the Association's member regulations
-                    </p>
+
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Has rendered distinguished and long-standing service to the profession and the Association.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Has been an active, compliant member for not less than fifteen (15) consecutive years.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Is nominated by at least five members and approved by the National Executive Committee.
+                        </p>
+                        </div>
                 </div>,
             RightsAndPrivileges:() =>
                 <ReadMoreSection title="Rights And Privileges">
@@ -1159,17 +1217,30 @@ export const membership = {
         },
         {
             name:'Honorary Membership',
-            link:'/membership/honorary-membership',
+            link:'/membership/honorary_membership',
             EligibilityCriteria:() => 
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
                         Eligibility Criteria
                     </p>
                     <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
-                        Honorary Membership may be granted to individuals who have made significant contributions to the 
-                        advancement of clinical medicine. The criteria and procedures for conferring Honorary Membership 
-                        shall be established by the National Executive Committee
+                        Honorary Membership may be conferred on individuals who;
                     </p>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Have rendered distinguished service or contribution to the Clinical Officer profession or the Association.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Do not otherwise meet the criteria for Full or Associate Membership.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Are nominated and approved in accordance with this Constitution.                        </p>
+                    </div>
                 </div>,
             RightsAndPrivileges:() =>
                 <ReadMoreSection title="Rights And Privileges">
@@ -1202,64 +1273,90 @@ export const membership = {
                 </ReadMoreSection>
         },
         {
-            name:'Grounds for Termination',
-            link:'/membership/grounds_for_termination',
-            GroundsForTermination:() => 
+            name:'Affiliate Membership ',
+            link:'/membership/affiliate_membership',
+            EligibilityCriteria:() =>
+                <div className='flex flex-col space-y-8 w-full h-auto'>
+                    <p className='flex w-full h-auto font-semibold font-leBeauneNew text-[22px] lg:text-4xl text-[rgb(59,59,59)]'>
+                        Eligibility Criteria
+                    </p>
+                    <p className='w-full h-auto text-lg text-[rgb(100,100,100)] font-jostBook'>
+                        Affiliate Membership may be granted to;
+                    </p>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Institutions, organizations, or individuals from related health professions who support the objectives of the Association.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Persons meeting any conditions prescribed by the National Executive Committee.                        </p>
+                    </div>
+                </div>
+
+        },
+        {
+            name:'Retired Membership',
+            link:'/membership/retired_membership',
+            TerminationProcedure:() =>
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'a)'}</p>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Non-payment of Dues: Membership may be terminated due to non-payment of membership dues or any 
-                            prescribed fees within the stipulated timeframes
-                        </p>
+                            Retired Membership shall be granted to Full Members who have formally retired from active professional practice and apply accordingly.                       </p>
                     </div>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'b)'}</p>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Violation of Code of Ethics: Termination may result from a member's violation of the COAZ Code 
-                            of Ethics or Health professions code of ethics
-                        </p>
+                            The Association shall have the power to verify eligibility and require evidence or documentation to support membership applications.                        </p>
                     </div>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'c)'}</p>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Conduct Prejudicial to the Association: Membership may be terminated if a member engages in 
-                            conduct deemed prejudicial to the interests and objectives of the Association
-                        </p>
-                    </div>
-                    <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'d)'}</p>
-                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Resignation: membership shall be terminated upon resignation
-                        </p>
+                            Membership shall be granted only upon compliance with the eligibility criteria and payment of any prescribed fees, as determined by the Association’s regulations.                        </p>
                     </div>
                 </div>
         },
         {
-            name:'Termination Procedure',
-            link:'/membership/termination_procedure',
-            TerminationProcedure:() => 
+            name:'Termination Of Membership',
+            link:'/membership/termination',
+            TerminationProcedure:() =>
                 <div className='flex flex-col space-y-8 w-full h-auto'>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'a)'}</p>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Notice: Prior to termination, a member shall be provided with written notice specifying the 
-                            grounds for termination and affording an opportunity to respond
+                            Membership may be terminated by the Association under the following circumstances;                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Non-payment of prescribed membership fees or dues within the stipulated period, after notice.                       </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Breach of the provisions of this Constitution, the Association’s Code of Conduct, or any other rules and regulations of the Association.
                         </p>
                     </div>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'b)'}</p>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Appeal Mechanism: The member subject to termination shall have the right to appeal against the 
-                            decision through established appeal mechanisms outlined in the Association's regulations
-                        </p>
+                            Conviction of a criminal offence or professional misconduct that undermines the reputation or integrity of the Association.                        </p>
                     </div>
                     <div className='flex flex-row space-x-4'>
-                        <p className='font-jostBook text-[rgb(85,85,85)] text-lg'>{'c)'}</p>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
                         <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
-                            Resignation: Any member may voluntarily resign from COAZ by submitting written notice to the 
-                            Secretary General. The resignation shall become effective after 90 days
-                        </p>
+                            Conduct detrimental to the interests, objectives, or reputation of the Association.                        </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Failure to maintain professional licensure or registration as required by law.                       </p>
+                    </div>
+                    <div className='flex flex-row space-x-4'>
+                        <FaRegCircleDot size={16} className='text-[rgb(85,85,85)] mt-[5px] shrink-0'/>
+                        <p className='text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]'>
+                            Any other grounds as prescribed by the Association’s disciplinary procedures.                        </p>
                     </div>
                 </div>
         }

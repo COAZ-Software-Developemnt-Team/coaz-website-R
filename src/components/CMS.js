@@ -13,7 +13,7 @@ const CMSSection = () => {
         const fetchContents = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://coaz.org/api/content/');
+                const response = await fetch('/api/content/');
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
                 setContents(data);
@@ -32,39 +32,27 @@ const CMSSection = () => {
         setLoading(true);
         setError(null);
         try {
+            let updatedOrNewContent;
             if (editingId) {
-                // Update existing content
-                const response = await fetch(`http://coaz.org/api/content/${editingId}`, {
+                const response = await fetch(`/api/content/${editingId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newContent),
                 });
-
                 if (!response.ok) throw new Error(`Failed to update: ${response.statusText}`);
-
-                const updatedContent = await response.json();
-                setContents(contents.map(c => c.id === editingId ? updatedContent : c));
+                updatedOrNewContent = await response.json();
+                setContents(contents.map(c => c.id === editingId ? updatedOrNewContent : c));
             } else {
-                // Add new content
-                const response = await fetch('http://coaz.org/api/content/', {
+                const response = await fetch('/api/content/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newContent),
                 });
-
                 if (!response.ok) throw new Error(`Failed to add: ${response.statusText}`);
-
-                const newContentFromServer = await response.json();
-                setContents([...contents, newContentFromServer]);
+                updatedOrNewContent = await response.json();
+                setContents([...contents, updatedOrNewContent]);
             }
 
-            // Refresh content list
-            const response = await fetch('http://coaz.org/api/content');
-            const data = await response.json();
-            setContents(data);
-            console.log("Content added:", data);
-
-            // Reset form
             setNewContent({ title: "", body: "" });
             setEditingId(null);
         } catch (err) {
@@ -74,6 +62,7 @@ const CMSSection = () => {
             setLoading(false);
         }
     };
+
 
     // Edit content
     const editContent = (content) => {
@@ -86,7 +75,7 @@ const CMSSection = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`http://coaz.org/api/content/${id}`, {
+            const response = await fetch(`/api/content/${id}`, {
                 method: 'DELETE',
             });
 
@@ -162,13 +151,7 @@ const CMSSection = () => {
                 {contents.length === 0 && !loading && !error && (
                     <p className="text-gray-500 italic">No content available</p>
                 )}
-                <div className="flex justify-center mt-4">
-                    <Link
-                        to="/News"
-                        className="text-blue-600 font-jostSemi underline hover:text-blue-800 transition"
-                    >
-                    </Link>
-            </div>
+
             </div>
         </div>
     );

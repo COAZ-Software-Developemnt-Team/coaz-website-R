@@ -12,8 +12,7 @@ const ChatBot = () => {
     // Call backend to fetch answer from Constitution
     const generateResponse = async (question) => {
         try {
-            const res = await fetch("http://localhost:8080/api/ask", {
-                method: "POST",
+            const res = await fetch("https://coaz.org/api/ask", {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ question }),
             });
@@ -71,7 +70,13 @@ const ChatBot = () => {
                                         : "bg-gray-200 text-gray-900 mr-auto max-w-[75%]"
                                 }`}
                             >
-                                {msg.text}
+                                {msg.sender === "bot" ? (
+                                    <span
+                                        dangerouslySetInnerHTML={{ __html: msg.text }}
+                                    />
+                                ) : (
+                                    msg.text
+                                )}
                             </div>
                         ))}
                         {isLoading && (
