@@ -1,58 +1,49 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const pdf = require("pdf-parse");
+const express = require('express');
+const bodyParser = require('body-parser');
+const pdf = require('pdf-parse');
+const fs = require('fs');
+const cors = require('cors');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(cors({ origin: 'http://localhost:3000' }));
 
-let constitution = [];
-
-// Load and parse the constitution PDF
-async function loadConstitution() {
-    const path = `${__dirname}/constitution.pdf`;
-
-    if (!fs.existsSync(path)) {
-        console.error("❌ constitution.pdf not found!");
-        return;
+// Load PDF content
+let constitutionText = '';
+fs.readFile('./constitution.pdf', (err, data) => {
+    if (err) {
+        console.error('Failed to load PDF:', err);
+        process.exit(1);
     }
+    pdf(data).then(parsed => {
+        constitutionText = parsed.text;
+        console.log('PDF loaded successfully!');
+    });
+});
 
-    const dataBuffer = fs.readFileSync(path);
-    const data = await pdf(dataBuffer);
+// Chat endpoint
+app.post('/chat', (req, res) => {
+    const query = req.body.query.toLowerCase();
 
-    // Split into paragraphs
-    constitution = data.text
-        .split("\n")
-        .map((p) => p.trim())
-        .filter((p) => p.length > 20);
-
-    console.log(`✅ Loaded ${constitution.length} sections from constitution`);
-}
-
-app.post("/api/ask", (req, res) => {
-    const { question } = req.body;
-    if (!question) return res.status(400).json({ error: "No question provided" });
-
-    // Simple keyword search
-    const results = constitution.filter((p) =>
-        p.toLowerCase().includes(question.toLowerCase())
-    );
-
-    if (results.length === 0) {
-        return res.json({
-            answer: "Sorry, I couldn’t find anything in the constitution about that.",
+    if (!constitutionText) {
+        return res.status(503).json({
+            error: "Server still loading... Please try again in a moment."
         });
     }
 
-    // Return top 3 matches
-    const answer = results.slice(0, 3).join("\n\n");
-    res.json({ answer });
+    const index = constitutionText.toLowerCase().indexOf(query);
+
+    if (index !== -1) {
+        const start = Math.max(0, index - 50);
+        const end = Math.min(constitutionText.length, index + query.length + 150);
+        const answer = constitutionText.substring(start, end);
+
+        res.json({ answer });
+    } else {
+        res.json({ answer: "No relevant information found in the constitution." });
+    }
 });
 
-// Start server after loading constitution
-loadConstitution().then(() => {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+app.listen(8080, () => {
+    console.log('Server running on http://localhost:8080');
 });

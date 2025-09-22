@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { FaRobot, FaTimes, FaPaperPlane } from "react-icons/fa";
+import axios from 'axios';
 
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -8,20 +9,18 @@ const ChatBot = () => {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     // Call backend to fetch answer from Constitution
+
     const generateResponse = async (question) => {
         try {
-            const res = await fetch("https://coaz.org/api/ask", {
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question }),
-            });
+            const response = await axios.post('http://localhost:8080/chat', { query: input });
 
-            const data = await res.json();
-            return data.answer || "Sorry, I couldn’t find anything in the Constitution about that.";
+            // Add bot response to chat
+            setMessages(prev => [...prev, { text: response.data.answer, sender: 'bot' }]);
         } catch (error) {
-            console.error("Error fetching from backend:", error);
-            return "⚠️ Something went wrong while fetching information.";
+            setMessages(prev => [...prev, { text: 'Error: Could not reach server', sender: 'bot' }]);
         }
     };
 
