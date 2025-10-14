@@ -1,89 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from "react-router-dom";
 
 const CMSSection = () => {
-    const [newContent, setNewContent] = useState({ title: "", body: "" });
-    const [editingId, setEditingId] = useState(null);
+    const [newContent, setNewContent] = useState({
+        title: '',
+        body: '',
+        image: null,
+        imageUrl: ''
+    });
     const [contents, setContents] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState('');
+    const [editingId, setEditingId] = useState(null);
 
-    // Fetch initial content from backend
+    // Fetch initial content
     useEffect(() => {
-        const fetchContents = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch('/api/content/');
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                setContents(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchContents();
     }, []);
 
-    // Save content (add or update)
-    const saveContent = async () => {
-        setLoading(true);
-        setError(null);
+    const fetchContents = async () => {
         try {
-            let updatedOrNewContent;
-            if (editingId) {
-                const response = await fetch(`/api/content/${editingId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newContent),
-                });
-                if (!response.ok) throw new Error(`Failed to update: ${response.statusText}`);
-                updatedOrNewContent = await response.json();
-                setContents(contents.map(c => c.id === editingId ? updatedOrNewContent : c));
-            } else {
-                const response = await fetch('/api/content/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newContent),
-                });
-                if (!response.ok) throw new Error(`Failed to add: ${response.statusText}`);
-                updatedOrNewContent = await response.json();
-                setContents([...contents, updatedOrNewContent]);
-            }
-
-            setNewContent({ title: "", body: "" });
-            setEditingId(null);
+            setLoading(true);
+            const res = await fetch('/api/contents');
+            const data = await res.json();
+            setContents(data);
         } catch (err) {
-            setError(err.message);
-            console.error("Error saving content:", err);
+            setError('Failed to load contents');
         } finally {
             setLoading(false);
         }
     };
 
+    const saveContent = async () => {
+        try {
+            setLoading(true);
 
-    // Edit content
+            // Prepare payload with image data
+            const payload = {
+                title: newContent.title,
+                body: newContent.body,
+                imageUrl: newContent.imageUrl
+            };
+
+            const response = await fetch(
+                editingId ? `/api/contents/${editingId}` : '/api/contents',
+                {
+                    method: editingId ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to save content');
+
+            // Reset form and refresh list
+            setNewContent({ title: '', body: '', image: null, imageUrl: '' });
+            setEditingId(null);
+            fetchContents();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const editContent = (content) => {
-        setNewContent({ title: content.title, body: content.body });
+        setNewContent({
+            title: content.title,
+            body: content.body,
+            image: null,
+            imageUrl: content.imageUrl || ''
+        });
         setEditingId(content.id);
     };
 
-    // Delete content
     const deleteContent = async (id) => {
-        setLoading(true);
-        setError(null);
         try {
-            const response = await fetch(`/api/content/${id}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) throw new Error(`Failed to delete: ${response.statusText}`);
-
-            setContents(contents.filter(c => c.id !== id));
+            setLoading(true);
+            await fetch(`/api/contents/${id}`, { method: 'DELETE' });
+            fetchContents();
         } catch (err) {
-            setError(err.message);
+            setError('Failed to delete content');
         } finally {
             setLoading(false);
         }
@@ -93,7 +89,7 @@ const CMSSection = () => {
         <div className="flex flex-col w-full h-fit space-y-6 bg-white p-6 rounded-xl shadow-md">
             <h1 className="text-2xl font-bold">Content Management</h1>
 
-            {/* Form for adding/updating */}
+            {/* Form for adding/updating content */}
             <div className="flex flex-col space-y-3">
                 <input
                     className="p-2 border rounded"
@@ -102,6 +98,37 @@ const CMSSection = () => {
                     value={newContent.title}
                     onChange={(e) => setNewContent({...newContent, title: e.target.value})}
                 />
+
+                {/* Image Upload Input */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                        if (e.target.files[0]) {
+                            const file = e.target.files[0];
+                            setNewContent(prev => ({ ...prev, image: file }));
+
+                            // Convert image to base64 for preview/storage
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setNewContent(prev => ({ ...prev, imageUrl: reader.result }));
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }}
+                />
+
+                {/* Image Preview */}
+                {newContent.imageUrl && (
+                    <div>
+                        <img
+                            src={newContent.imageUrl}
+                            alt="Preview"
+                            className="max-w-xs max-h-32 object-cover"
+                        />
+                    </div>
+                )}
+
                 <textarea
                     className="p-2 border rounded"
                     placeholder="Body"
@@ -128,6 +155,13 @@ const CMSSection = () => {
                         className="p-4 border rounded shadow-sm bg-gray-50 flex flex-col space-y-2"
                     >
                         <h2 className="text-xl font-semibold">{c.title}</h2>
+                        {c.imageUrl && (
+                            <img
+                                src={c.imageUrl}
+                                alt={c.title}
+                                className="max-w-xs max-h-32 object-cover"
+                            />
+                        )}
                         <p>{c.body}</p>
                         <div className="flex space-x-2">
                             <button

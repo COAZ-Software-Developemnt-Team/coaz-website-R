@@ -1,6 +1,4 @@
 import React from 'react'
-import { GiMegaphone } from "react-icons/gi";
-import { FaRegCircleDot } from "react-icons/fa6";
 import { GoDotFill } from "react-icons/go";
 import ReadMoreSection from "./ReadMore";
 

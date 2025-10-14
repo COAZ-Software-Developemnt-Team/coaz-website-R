@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 import {news,events} from '../data'
 import { LiaClockSolid } from "react-icons/lia";
 import { SlLocationPin } from "react-icons/sl";
+import CMS from '../components/CMS'
+
 
 const News = () => {
     const {mainElementRef} = useContext(GlobalContext);
@@ -95,7 +97,9 @@ const News = () => {
                       </div>
                       <More onSelect={onSelect}/>
                       <Events/>
+                      <CMS/>
                   </div>
+
                 }
             </div>
         </div>

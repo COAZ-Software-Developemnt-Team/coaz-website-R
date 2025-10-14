@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useContext} from "react";
 import {GlobalContext} from "../contexts/GlobalContext";
 import {Link} from "react-router-dom";
+import Button from "./Button";
 
 const About = () => {
     const {mainElementRef} = useContext(GlobalContext);
@@ -121,7 +122,9 @@ const About = () => {
                                 to="/objective"
                                 className="text-blue-600 font-jostSemi underline hover:text-blue-800 transition"
                             >
-                                Read More
+                                <div className='space-x-16'>
+                                    <Button text="Read More" onClick={() => alert("Button clicked!")} />
+                                </div>
                             </Link>
                         </div>
                     </div>

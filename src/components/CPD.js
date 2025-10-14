@@ -6,10 +6,10 @@ import { GoDotFill } from "react-icons/go";
 const CPD = () => {
     return (
         <div>
-            <Banner
-                title="Learn. Grow. Excel"
-                subtitle="Welcome to your professional learning hub. Every course you take strengthens your skills, advances your career, and improves the health of our communities. Together, we are shaping a stronger, more resilient healthcare system for Zambia."
-                />
+            {/*<Banner*/}
+            {/*    title="Learn. Grow. Excel"*/}
+            {/*    subtitle="Welcome to your professional learning hub. Every course you take strengthens your skills, advances your career, and improves the health of our communities. Together, we are shaping a stronger, more resilient healthcare system for Zambia."*/}
+            {/*    />*/}
             <h2 className="text-xl md:text-xl font-bold">About The Platform</h2>
             <div className="text-lg tracking-wider font-jostBook text-[rgb(85,85,85)]">
                 <p>

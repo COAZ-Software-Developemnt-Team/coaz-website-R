@@ -2,6 +2,27 @@ import React, { useState } from "react";
 import { FaRobot, FaTimes, FaPaperPlane } from "react-icons/fa";
 import axios from 'axios';
 
+const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+        ? "https://coaz.org" // Plesk
+        : "http://localhost:8080"; // Local dev
+
+export const sendQuery = async (input) => {
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}/api/chat`,
+            { query: input },
+            {
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("API Error:", error);
+        return { answer: "Sorry, I couldn’t reach the server." };
+    }
+};
+
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
@@ -9,36 +30,38 @@ const ChatBot = () => {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
 
     // Call backend to fetch answer from Constitution
-
-    const generateResponse = async (question) => {
-        try {
-            const response = await axios.post('http://localhost:8080/chat', { query: input });
-
-            // Add bot response to chat
-            setMessages(prev => [...prev, { text: response.data.answer, sender: 'bot' }]);
-        } catch (error) {
-            setMessages(prev => [...prev, { text: 'Error: Could not reach server', sender: 'bot' }]);
-        }
-    };
 
     const toggleChat = () => setIsOpen(!isOpen);
 
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const userMessage = { sender: "user", text: input };
-        setMessages((prev) => [...prev, userMessage]);
-        setInput("");
+        // Add user message
+        setMessages(prev => [...prev, { sender: "user", text: input }]);
         setIsLoading(true);
 
-        const response = await generateResponse(input);
+        try {
+            const response = await sendQuery(input);
+            console.log("Chatbot API response:", response);
 
-        setMessages((prev) => [...prev, { sender: "bot", text: response }]);
-        setIsLoading(false);
+            setMessages(prev => [
+                ...prev,
+                { sender: "bot", text: response.text || "I couldn’t find relevant info in the constitution." }
+            ]);
+        } catch (err) {
+            setMessages(prev => [
+                ...prev,
+                { sender: "bot", text: `❌ Error: ${err.message}` }
+            ]);
+        } finally {
+            setIsLoading(false);
+            setInput("");
+        }
     };
+
+
 
     return (
         <>
@@ -63,19 +86,16 @@ const ChatBot = () => {
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
-                                className={`p-2 rounded-lg text-sm ${
-                                    msg.sender === "user"
-                                        ? "bg-[rgb(0,175,240)] text-white self-end ml-auto max-w-[75%]"
-                                        : "bg-gray-200 text-gray-900 mr-auto max-w-[75%]"
-                                }`}
+                                className={`message ${msg.sender}`}
+                                dangerouslySetInnerHTML={{ __html: msg.text }}
                             >
-                                {msg.sender === "bot" ? (
-                                    <span
-                                        dangerouslySetInnerHTML={{ __html: msg.text }}
-                                    />
-                                ) : (
-                                    msg.text
-                                )}
+                                {/*{msg.sender === "bot" ? (*/}
+                                {/*    <span*/}
+                                {/*        dangerouslySetInnerHTML={{ __html: msg.text }}*/}
+                                {/*    />*/}
+                                {/*) : (*/}
+                                {/*    msg.text*/}
+                                {/*)}*/}
                             </div>
                         ))}
                         {isLoading && (

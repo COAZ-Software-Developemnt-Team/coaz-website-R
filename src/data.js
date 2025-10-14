@@ -9,6 +9,7 @@ import React from "react";
 import Research from "./components/Research";
 import CPD from "./components/CPD";
 import Health from "./components/Health";
+import Button from "./components/Button";
 
 
 
@@ -230,7 +231,7 @@ export const services = {
         {
             image:'/images/img_49.jpg',
             name:'Learning And CPD',
-            link:'/cpd',
+            link:'/services/cpd',
             Component: CPD
 
         },
@@ -451,7 +452,9 @@ export const organisation = {
                                     textDecoration: 'none',
                                 }}
                             >
-                               Read More
+                                <div className='space-x-16'>
+                                <Button text="Read More" onClick={() => alert("Button clicked!")} />
+                            </div>
                             </Link>
                         </ReadMoreSection>
                     ],

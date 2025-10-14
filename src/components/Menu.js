@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useContext,useState, useEffect, useRef } from "react";
 import { PiCaretDown, PiCaretRight } from "react-icons/pi";
 import { Logo } from "./CoazIcons";
 import { FaPaperPlane, FaPhoneAlt } from "react-icons/fa";
@@ -9,6 +9,9 @@ import Search from "../components/Search";
 import { renderToStaticMarkup } from 'react-dom/server'
 import { useInRouterContext, NavLink } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
+import { UserContext } from "../contexts/UserContext";
+import { FaUserCircle } from "react-icons/fa";
+import {Link} from "react-router-dom";
 
 const calcWidth = (Component) => {
     if (!Component) {
@@ -32,7 +35,11 @@ const Menu = () => {
   const [navbarMenus,setNavbarMenus] = useState(null); 
   const menuButtonsRef = useRef(null);
   const more = 'More';
+  const mobileMenuRef = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logout } = useContext(UserContext);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
 
 
     const reduceMenus = (menus) => {
@@ -103,8 +110,17 @@ const Menu = () => {
 
 
     }, [])
-
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+                setMobileOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
     const px = 'px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%]'
+
 
     return (
         <div style={{backgroundImage: 'url(/images/bg_8.jpg)'}}
@@ -118,7 +134,11 @@ const Menu = () => {
                         style={{transition: "all .5s ease-in-out"}}
                         className="flex w-[56px] h-[56px] sm:w-[80px] sm:h-[80px] items-center justify-center shrink-0"
                     >
-                        <Logo fill="white"/>
+                        <Link to="/home">
+                        <Logo fill="white"
+                        />
+                        </Link>
+
                     </button>
                     <p className='text-4xl md:text-5xl font-nunitoSansBlack'>COAZ</p>
                 </div>
@@ -131,27 +151,35 @@ const Menu = () => {
                     <div className="hidden xl:flex flex-row items-center space-x-1">
                         <FaPhoneAlt size={20}/>
                         <p className="font-nunitoSansSemiBold">Cell :</p>
-                        <p className="font-nunitoSansLight">+260 979 123 456</p>
+                        <p className="font-nunitoSansLight">+260761234390</p>
                     </div>
                     <div className="hidden md:block w-fit h-fit space-x-2">
                         <Search/>
                     </div>
+
                     <div className="flex flex-row items-center space-x-2">
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
-                            <a href="https://portal.coaz.org/register">
-                                Register
-                            </a>
-                        </button>
-                        <div className="h-4 border-l border-white" />
-                        <button className="p-1 w-auto font-nunitoSansRegular text-white rounded-full cursor-pointer shrink-0 text-nowrap">
-                            <a href="https://portal.coaz.org/login"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Log In
-                            </a>
-                        </button>
+                        {!user ? (
+                            <button className="p-1 w-auto text-white bg-[rgb(0,175,240)] rounded-full">
+                                <Link to="/login">Login</Link>
+                            </button>
+                        ) : (
+                            <div className="flex items-center space-x-2">
+                                <FaUserCircle size={24} />
+                                <span>{user.username}</span>
+                                <button onClick={logout} className="text-red-500 text-sm ml-2">Logout</button>
+                            </div>
+                        )}
+                        {/*{user && (*/}
+                        {/*    <button*/}
+                        {/*        onClick={() => setSidebarOpen(!sidebarOpen)}*/}
+                        {/*        className="text-2xl"*/}
+                        {/*    >*/}
+                        {/*        <FaBars size={20}/>*/}
+                        {/*    </button>*/}
+                        {/*)}*/}
                     </div>
+
+
                 </div>
             </div>
             {/*DESKTOP MENU*/}
@@ -197,10 +225,11 @@ const Menu = () => {
                                 link={menu.link}
                                 menus={menu.menus}
                                 mobileMode={true}
-                                setSelected={() => {
-                                    setSelected(menu.name);
-                                    setMobileOpen(false); // close after selecting
-                                }}
+                                setSelected={() => setMobileOpen(false)
+                                    // setSelected(menu.name);
+                                    // setMobileOpen(false); // close after selecting
+
+                                }
                                 closeParentDropDown={() => setMobileOpen(false)}
                             />
                         ))}
@@ -219,7 +248,6 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
     const menusRef = useRef(null);
     const isInRouterContext = useInRouterContext();
 
-
     const toggleDropDown = () => {
         if (menus && menus.length > 0) {
             setDroppedDown(!droppedDown);
@@ -229,6 +257,15 @@ const MenuButton = ({name, link, menus, parentRef, setSelected, closeParentDropD
         }
     };
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setDroppedDown(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
   return (
 

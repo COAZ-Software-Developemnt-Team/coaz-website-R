@@ -1,13 +1,13 @@
 import React from "react";
-import {useNavigate, Outlet} from "react-router-dom";
+import {Outlet} from "react-router-dom";
 import Menu from "./Menu";
 import {Logo} from "./CoazIcons";
+import Sidebar from "./Sidebar";
 
 import {
     FaFacebookF,
     FaInstagram,
     FaLinkedinIn,
-    FaPaperPlane,
 } from "react-icons/fa";
 import {FaFacebook} from "react-icons/fa6";
 import {IoLogoWhatsapp} from "react-icons/io";
@@ -20,6 +20,7 @@ import {FaTwitter} from "react-icons/fa";
 const Main = () => {
     return (
         <div className="w-full h-auto">
+        <Sidebar/>
             <header className="h-fit">
                 <Menu/>
             </header>
@@ -82,9 +83,6 @@ const Main = () => {
                             <ul>
                                 <li className="flex items-center gap-2">
                                     <FaClock/> Week Days: 08:00 - 17:00
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <FaClock/> Weekends: 08:00 - 12:00
                                 </li>
                             </ul>
                         </div>

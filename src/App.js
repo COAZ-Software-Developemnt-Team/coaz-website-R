@@ -4,6 +4,7 @@ import './App.css';
 import './index.css'
 import axios from "axios";
 import {GlobalContext} from './contexts/GlobalContext';
+import { UserProvider } from "./contexts/UserContext";
 import {organisation, membership} from './data';
 import Home from './components/Home';
 import Main from './components/Main';
@@ -16,19 +17,18 @@ import News from './components/News';
 import Organisation from './components/Organisation';
 import Membership from './components/Membership';
 import More from "./components/More";
-import Login from "./components/Login";
-import CMSSection from "./components/CMS";
 import CPD from './components/CPD';
 import Development from "./components/Development";
+import Form from "./components/Form";
 
 
 
 
-axios.defaults.baseURL = 'http://localhost:8080/api/';
+// axios.defaults.baseURL = 'http://localhost:8080/api/';
 //axios.defaults.baseURL = 'http://localhost:8080/coaz/api/';
 //axios.defaults.baseURL = 'http://192.168.0.161:8080/api/';
 //axios.defaults.baseURL = 'https://coaz.org:8085/coaz_test/api/';
-//axios.defaults.baseURL = 'https://coaz.org:8085/coaz/api/';
+axios.defaults.baseURL = 'https://coaz.org:8085/coaz/api/';
 
 const findMenu = (menu, link) => {
     if (menu.link == link) {
@@ -94,6 +94,7 @@ function App() {
             <GlobalContext.Provider value={{
                 findMenu, screenSize, dialog, setDialog, showDropMainMenu, setShowDropMainMenu,
             }}>
+                <UserProvider>
                 <Routes>
                     <Route path='/' element={<Main/>}>
                         <Route index element={<Home/>}/>
@@ -105,16 +106,11 @@ function App() {
                         {createRoute(membership, Membership)}
                         <Route path='about' element={<About/>}/>
                         <Route path='cpd' element={<CPD/>}/>
+                        <Route path='login' element={<Form/>}/>
                         <Route path='objective' element={<Objective/>}/>
                         <Route path='development' element={<Development/>}/>
                         <Route path='news' element={<News/>}/>
                         <Route path='readmore' element={<More/>}/>
-                        {/* 🔑 Login & CMS routes */}
-                        <Route path='login' element={<Login setIsLoggedIn={setIsLoggedIn} />} />
-                        <Route
-                            path='cms'
-                            element={isLoggedIn ? <CMSSection /> : <Navigate to="/login" />}
-                        />
                     </Route>
                 </Routes>
                 {dialog && dialog.show && dialog.Component && (
@@ -123,6 +119,7 @@ function App() {
                         <dialog.Component/>
                     </div>
                 )}
+                </UserProvider>
 
             </GlobalContext.Provider>
         </div>

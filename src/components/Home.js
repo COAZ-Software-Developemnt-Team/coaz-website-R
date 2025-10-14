@@ -181,19 +181,19 @@ const Statistics = () => {
             }
         });
         // Registered Members
-        fetch("https://coaz.org:8085/coaz/api/user/count")
+        fetch("https://coaz.org:8085/coaz/api/users/count")
             .then(res => res.text())
             .then(text => setRegisteredMembers(parseInt(text)))
             .catch(err => console.error("Error fetching registered members:", err));
 
         // Active Members
-        fetch("--")
+        fetch("https://coaz.org:8085/coaz/api/users/count/active")
             .then(res => res.text())
             .then(text => setActiveMembers(parseInt(text)))
             .catch(err => console.error("Error fetching active members:", err));
 
         // Active Districts
-        fetch("https://coaz.org:8085/coaz/api/district/count")
+        fetch("https://coaz.org:8085/coaz/api/districts/count")
             .then(res => res.text())
             .then(text => setActiveDistricts(parseInt(text)))
             .catch(err => console.error("Error fetching active districts:", err));

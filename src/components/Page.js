@@ -1,14 +1,17 @@
 // Page.js
-import React from 'react'
+import React, {useContext} from 'react'
 import { IoIosArrowForward } from 'react-icons/io';
 import { useParams,useLocation } from 'react-router-dom'
+import {UserContext} from "../contexts/UserContext";
 
 const Page = ({children}) => {
     const {duty} = useParams(); 
     const path = useLocation().pathname;
     const pathItems = path?path.split('/'):[];
+    const { mode } = useContext(UserContext);
 
-  return (
+
+    return (
     <div className='flex flex-col w-full h-auto min-h-screen'>
         {/* Hero Section */}
         <div className='relative flex flex-col w-full h-72 justify-center items-center space-y-4 bg-[url(/public/images/img_26.jpg)] bg-cover bg-center'>
@@ -28,6 +31,7 @@ const Page = ({children}) => {
         {/* Content Section */}
         <div className='w-full bg-white flex-1'>
             {children}
+
         </div>
     </div>
   )

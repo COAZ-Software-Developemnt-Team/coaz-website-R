@@ -1,7 +1,7 @@
 import React from "react";
 import ReadMoreSection from "./ReadMore";
 import { GoDotFill } from "react-icons/go";
-import Development from "./Development";
+import Button from "./Button";
 
 const Research = () => {
     return (
@@ -151,7 +151,9 @@ const Research = () => {
                                         rel="noopener noreferrer"
                                         className="hover:underline text-blue-600"
                                     >
-                                        Read More
+                                            <div className='space-x-16'>
+                                                <Button text="Read More" onClick={() => alert("Button clicked!")} />
+                                            </div>
                                     </a>
                                 </div>
                             </div>
