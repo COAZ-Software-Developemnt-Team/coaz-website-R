@@ -1,0 +1,37 @@
+{
+  "files": {
+    "main.css": "/static/css/main.ee6d395e.css",
+    "main.js": "/static/js/main.f3fd52c5.js",
+    "static/media/img_32.jpg": "/static/media/img_32.6727bb39440a04d013ff.jpg",
+    "static/media/img_34.jpg": "/static/media/img_34.8f9ac8ee32674b6bb592.jpg",
+    "static/media/img_49.jpg": "/static/media/img_49.0a498485043a0a383486.jpg",
+    "static/media/img_26.jpg": "/static/media/img_26.d7e5bc6ddce6419d288d.jpg",
+    "static/media/img_15.jpg": "/static/media/img_15.00f36e1da1252ff22d33.jpg",
+    "static/media/img_31.jpg": "/static/media/img_31.1fa1d48ed0ccee5ab022.jpg",
+    "static/media/NunitoSans-LightItalic.ttf": "/static/media/NunitoSans-LightItalic.dfc03adc6c8cd919c590.ttf",
+    "static/media/NunitoSans-ExtraBoldItalic.ttf": "/static/media/NunitoSans-ExtraBoldItalic.61a3659ff53bcd466bc8.ttf",
+    "static/media/NunitoSansExtraBlack-Italic.ttf": "/static/media/NunitoSansExtraBlack-Italic.3ddbb104a3b4d97eba1d.ttf",
+    "static/media/NunitoSans-BoldItalic.ttf": "/static/media/NunitoSans-BoldItalic.56a193486a3d3039049b.ttf",
+    "static/media/NunitoSans-MediumItalic.ttf": "/static/media/NunitoSans-MediumItalic.720d2face59ad5a06623.ttf",
+    "static/media/NunitoSans-SemiBoldItalic.ttf": "/static/media/NunitoSans-SemiBoldItalic.26552295647c3ef357df.ttf",
+    "static/media/NunitoSans-BlackItalic.ttf": "/static/media/NunitoSans-BlackItalic.4dc8f2310ee48047b967.ttf",
+    "static/media/NunitoSans-Italic.ttf": "/static/media/NunitoSans-Italic.ad1be5d2837ec40d3178.ttf",
+    "static/media/NunitoSans-ExtraBold.ttf": "/static/media/NunitoSans-ExtraBold.b0202a4e4d574edaf8b2.ttf",
+    "static/media/NunitoSans-Light.ttf": "/static/media/NunitoSans-Light.d171bb790766840be284.ttf",
+    "static/media/NunitoSansExtraBlack-Regular.ttf": "/static/media/NunitoSansExtraBlack-Regular.ab9ae952d71e0d9d47ad.ttf",
+    "static/media/NunitoSans-Black.ttf": "/static/media/NunitoSans-Black.3d33c12887aa2bb7e85d.ttf",
+    "static/media/NunitoSans-Bold.ttf": "/static/media/NunitoSans-Bold.f3701dc642fa374c8c3a.ttf",
+    "static/media/NunitoSans-ExtraLightItalic.ttf": "/static/media/NunitoSans-ExtraLightItalic.f89526c2e5ae0d21fa90.ttf",
+    "static/media/NunitoSans-SemiBold.ttf": "/static/media/NunitoSans-SemiBold.fcf49ad85de0c0b553fc.ttf",
+    "static/media/NunitoSans-Medium.ttf": "/static/media/NunitoSans-Medium.cb4dc3e8e00e06ef59d4.ttf",
+    "static/media/NunitoSans-Regular.ttf": "/static/media/NunitoSans-Regular.b951d26b7cff8954be31.ttf",
+    "static/media/NunitoSans-ExtraLight.ttf": "/static/media/NunitoSans-ExtraLight.cbc9784c5a961525258d.ttf",
+    "index.html": "/index.html",
+    "main.ee6d395e.css.map": "/static/css/main.ee6d395e.css.map",
+    "main.f3fd52c5.js.map": "/static/js/main.f3fd52c5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ee6d395e.css",
+    "static/js/main.f3fd52c5.js"
+  ]
+}
