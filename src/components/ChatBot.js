@@ -48,7 +48,7 @@ const ChatBot = () => {
 
             setMessages(prev => [
                 ...prev,
-                { sender: "bot", text: response.text || "I couldn’t find relevant info in the constitution." }
+                { sender: "bot", text: response.answer || "I couldn’t find relevant info in the constitution." }
             ]);
         } catch (err) {
             setMessages(prev => [
