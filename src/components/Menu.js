@@ -11,7 +11,6 @@ import { useInRouterContext, NavLink } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
 import { FaUserCircle } from "react-icons/fa";
 import {Link} from "react-router-dom";
-import user from "../components/user";
 import { UserContext } from "../contexts/UserContext";
 
 
@@ -40,7 +39,7 @@ const Menu = () => {
   const mobileMenuRef = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [SidebarOpen, setSidebarOpen] = useState(false);
-    const { user, logout } = useContext(UserContext);
+  const { user, logout } = useContext(UserContext);
 
 
 

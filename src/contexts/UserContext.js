@@ -8,19 +8,8 @@ export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
-
-    const login = (userData) => {
-        setUser(userData);
-    };
-
-    const logout = () => {
-        setUser(null);
-        sessionStorage.clear();
-        navigate('/home');
-    };
-
     return (
-        <UserContext.Provider value={{ user, setUser, logout }}>
+        <UserContext.Provider value={{ user, setUser}}>
             {children}
         </UserContext.Provider>
     );

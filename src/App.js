@@ -63,7 +63,6 @@ const createRoute = (menu, Element, key) => {
 }
 
 function App() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [screenSize, setScreenSize] = useState('lg');
     const [showDropMainMenu, setShowDropMainMenu] = useState(false);
     const [dialog, setDialog] = useState(null);
