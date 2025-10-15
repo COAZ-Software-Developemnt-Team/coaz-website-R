@@ -9,9 +9,11 @@ import Search from "../components/Search";
 import { renderToStaticMarkup } from 'react-dom/server'
 import { useInRouterContext, NavLink } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
-import { UserContext } from "../contexts/UserContext";
 import { FaUserCircle } from "react-icons/fa";
 import {Link} from "react-router-dom";
+import user from "../components/user";
+import { UserContext } from "../contexts/UserContext";
+
 
 const calcWidth = (Component) => {
     if (!Component) {
@@ -37,8 +39,9 @@ const Menu = () => {
   const more = 'More';
   const mobileMenuRef = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, logout } = useContext(UserContext);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [SidebarOpen, setSidebarOpen] = useState(false);
+    const { user, logout } = useContext(UserContext);
+
 
 
 
@@ -159,6 +162,7 @@ const Menu = () => {
 
                     <div className="flex flex-row items-center space-x-2">
                         {!user ? (
+
                             <button className="p-1 w-auto text-white bg-[rgb(0,175,240)] rounded-full">
                                 <Link to="/login">Login</Link>
                             </button>
@@ -169,6 +173,7 @@ const Menu = () => {
                                 <button onClick={logout} className="text-red-500 text-sm ml-2">Logout</button>
                             </div>
                         )}
+
                         {/*{user && (*/}
                         {/*    <button*/}
                         {/*        onClick={() => setSidebarOpen(!sidebarOpen)}*/}

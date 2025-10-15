@@ -1,27 +1,26 @@
-import React, { createContext, useState } from "react";
+// UserContext.js
+import React, { createContext, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 
-// Create Context
 export const UserContext = createContext();
 
-// Create Provider
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [mode, setMode] = useState("view"); // "view" or "edit"
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const navigate = useNavigate();
 
 
-    const login = (user) => {
-        setUser({ user });
+    const login = (userData) => {
+        setUser(userData);
     };
 
     const logout = () => {
         setUser(null);
-        setMode("view");
-
+        sessionStorage.clear();
+        navigate('/home');
     };
 
     return (
-        <UserContext.Provider value={{ user, login, logout,mode,setMode,sidebarOpen,setSidebarOpen }}>
+        <UserContext.Provider value={{ user, setUser, logout }}>
             {children}
         </UserContext.Provider>
     );
