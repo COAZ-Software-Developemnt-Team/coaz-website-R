@@ -43,7 +43,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && npm run move-build",
+    "move-build": "xcopy build\\* . /E /Y && rmdir build /S /Q",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
