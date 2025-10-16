@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.b3906a3e.css",
-    "main.js": "/static/js/main.dd30e553.js",
+    "main.js": "/static/js/main.4600118a.js",
     "static/media/img_32.jpg": "/static/media/img_32.6727bb39440a04d013ff.jpg",
     "static/media/img_34.jpg": "/static/media/img_34.8f9ac8ee32674b6bb592.jpg",
     "static/media/img_49.jpg": "/static/media/img_49.0a498485043a0a383486.jpg",
@@ -28,10 +28,10 @@
     "static/media/NunitoSans-ExtraLight.ttf": "/static/media/NunitoSans-ExtraLight.cbc9784c5a961525258d.ttf",
     "index.html": "/index.html",
     "main.b3906a3e.css.map": "/static/css/main.b3906a3e.css.map",
-    "main.dd30e553.js.map": "/static/js/main.dd30e553.js.map"
+    "main.4600118a.js.map": "/static/js/main.4600118a.js.map"
   },
   "entrypoints": [
     "static/css/main.b3906a3e.css",
-    "static/js/main.dd30e553.js"
+    "static/js/main.4600118a.js"
   ]
 }
