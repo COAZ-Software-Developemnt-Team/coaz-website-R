@@ -952,9 +952,21 @@ app.post("/api/test-rag", async (req, res) => {
     initRAGSystem();
 
     const PORT = process.env.PORT || 8080;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`RAG System: ${ragSystem ? 'Enabled' : 'Disabled'}`);
-        console.log(`Constitution sections: ${constitutionSections.length}`);
-    });
+    const corsOptions = {
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+
+            if (config.corsOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                console.log('CORS blocked for origin:', origin);
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: false
+    };
+    app.use(cors(corsOptions));
 })();

@@ -22,3 +22,5 @@
 {"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760597376216_3sdrl78s0","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760597376216_3sdrl78s0","timestamp":"2025-10-16T07:06:24.012Z"}
 {"level":"info","message":"AI response generated successfully in 2ms using huggingface for session: session_1760597376216_3sdrl78s0","processingTime":2,"provider":"huggingface","responseLength":458,"service":"coaz-chatbot","sessionId":"session_1760597376216_3sdrl78s0","timestamp":"2025-10-16T07:06:24.014Z"}
 {"level":"info","message":"POST /api/chat - 200 - 5ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-16T07:06:24.016Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-16T11:37:48.922Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-16T11:37:48.930Z"}
