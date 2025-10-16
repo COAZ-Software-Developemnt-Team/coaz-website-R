@@ -142,7 +142,7 @@ const rateLimiter = rateLimit({
 });
 
 // Apply rate limiting to API routes
-app.use('/api/', rateLimiter);
+app.use('/api/chat', rateLimiter);
 
 // CORS configuration
 const corsOptions = {
