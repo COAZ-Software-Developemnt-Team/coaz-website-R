@@ -26,3 +26,51 @@
 {"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-16T11:37:48.930Z"}
 {"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T06:33:26.717Z"}
 {"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T06:33:26.722Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T08:43:27.924Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T08:43:27.926Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:15.636Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:15.640Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:16.857Z"}
+{"level":"info","message":"📊 Environment: production","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:16.857Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:16.857Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:16.857Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760691632780_hi59ptkuk","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760691632780_hi59ptkuk","timestamp":"2025-10-17T09:00:46.993Z"}
+{"level":"info","message":"Created new session: session_1760691632780_hi59ptkuk","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:46.994Z"}
+{"level":"info","message":"AI response generated successfully in 2ms using huggingface for session: session_1760691632780_hi59ptkuk","processingTime":2,"provider":"huggingface","responseLength":152,"service":"coaz-chatbot","sessionId":"session_1760691632780_hi59ptkuk","timestamp":"2025-10-17T09:00:46.996Z"}
+{"level":"info","message":"POST /api/chat - 200 - 13ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T09:00:47.003Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760691670713_cpxfprnak","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760691670713_cpxfprnak","timestamp":"2025-10-17T09:01:16.563Z"}
+{"level":"info","message":"Created new session: session_1760691670713_cpxfprnak","service":"coaz-chatbot","timestamp":"2025-10-17T09:01:16.564Z"}
+{"level":"info","message":"AI response generated successfully in 2ms using huggingface for session: session_1760691670713_cpxfprnak","processingTime":2,"provider":"huggingface","responseLength":152,"service":"coaz-chatbot","sessionId":"session_1760691670713_cpxfprnak","timestamp":"2025-10-17T09:01:16.565Z"}
+{"level":"info","message":"POST /api/chat - 200 - 6ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T09:01:16.568Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760691670713_cpxfprnak","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760691670713_cpxfprnak","timestamp":"2025-10-17T09:02:00.905Z"}
+{"level":"info","message":"AI response generated successfully in 1250ms using huggingface for session: session_1760691670713_cpxfprnak","processingTime":1250,"provider":"huggingface","responseLength":456,"service":"coaz-chatbot","sessionId":"session_1760691670713_cpxfprnak","timestamp":"2025-10-17T09:02:02.155Z"}
+{"level":"info","message":"POST /api/chat - 200 - 1459ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T09:02:02.159Z"}
+{"level":"info","message":"Session expired and cleaned up: session_1760691632780_hi59ptkuk","service":"coaz-chatbot","timestamp":"2025-10-17T10:00:55.011Z"}
+{"level":"info","message":"Session expired and cleaned up: session_1760691670713_cpxfprnak","service":"coaz-chatbot","timestamp":"2025-10-17T10:05:55.009Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:18.680Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:18.682Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:19.660Z"}
+{"level":"info","message":"📊 Environment: production","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:19.661Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:19.661Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-17T12:17:19.661Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760703444697_kq6s25isr","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760703444697_kq6s25isr","timestamp":"2025-10-17T12:18:24.394Z"}
+{"level":"info","message":"Created new session: session_1760703444697_kq6s25isr","service":"coaz-chatbot","timestamp":"2025-10-17T12:18:24.395Z"}
+{"level":"info","message":"AI response generated successfully in 1125ms using huggingface for session: session_1760703444697_kq6s25isr","processingTime":1125,"provider":"huggingface","responseLength":463,"service":"coaz-chatbot","sessionId":"session_1760703444697_kq6s25isr","timestamp":"2025-10-17T12:18:25.519Z"}
+{"level":"info","message":"POST /api/chat - 200 - 1340ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T12:18:25.532Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:40.331Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:40.333Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:41.212Z"}
+{"level":"info","message":"📊 Environment: production","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:41.212Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:41.212Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-17T12:20:41.213Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760703660145_jcc2svhke","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760703660145_jcc2svhke","timestamp":"2025-10-17T12:21:13.071Z"}
+{"level":"info","message":"Created new session: session_1760703660145_jcc2svhke","service":"coaz-chatbot","timestamp":"2025-10-17T12:21:13.072Z"}
+{"level":"info","message":"AI response generated successfully in 1105ms using huggingface for session: session_1760703660145_jcc2svhke","processingTime":1105,"provider":"huggingface","responseLength":445,"service":"coaz-chatbot","sessionId":"session_1760703660145_jcc2svhke","timestamp":"2025-10-17T12:21:14.176Z"}
+{"level":"info","message":"POST /api/chat - 200 - 1235ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T12:21:14.188Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760703740590_3x8nmd7qt","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760703740590_3x8nmd7qt","timestamp":"2025-10-17T12:22:29.637Z"}
+{"level":"info","message":"Created new session: session_1760703740590_3x8nmd7qt","service":"coaz-chatbot","timestamp":"2025-10-17T12:22:29.637Z"}
+{"level":"info","message":"AI response generated successfully in 4ms using huggingface for session: session_1760703740590_3x8nmd7qt","processingTime":4,"provider":"huggingface","responseLength":455,"service":"coaz-chatbot","sessionId":"session_1760703740590_3x8nmd7qt","timestamp":"2025-10-17T12:22:29.640Z"}
+{"level":"info","message":"POST /api/chat - 200 - 6ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T12:22:29.641Z"}
+{"hasContext":false,"level":"info","message":"Generating AI response using huggingface for session: session_1760703740590_3x8nmd7qt","provider":"huggingface","service":"coaz-chatbot","sessionId":"session_1760703740590_3x8nmd7qt","timestamp":"2025-10-17T12:22:45.799Z"}
+{"level":"info","message":"AI response generated successfully in 4ms using huggingface for session: session_1760703740590_3x8nmd7qt","processingTime":4,"provider":"huggingface","responseLength":437,"service":"coaz-chatbot","sessionId":"session_1760703740590_3x8nmd7qt","timestamp":"2025-10-17T12:22:45.803Z"}
+{"level":"info","message":"POST /api/chat - 200 - 9ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T12:22:45.806Z"}
