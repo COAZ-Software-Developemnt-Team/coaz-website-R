@@ -15,6 +15,8 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { body, validationResult } = require('express-validator');
 const RAGSystem = require('./rag-system');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 
@@ -26,6 +28,16 @@ const config = {
     ai: {
         provider: process.env.AI_PROVIDER || 'huggingface', // 'openai', 'huggingface', or 'offline'
         fallbackToOffline: process.env.AI_FALLBACK_OFFLINE !== 'false'
+    },
+    offlineResponse: {
+        enabled: process.env.OFFLINE_RESPONSE_ENABLED !== 'false', // Default: enabled
+        fallbackOnly: process.env.OFFLINE_RESPONSE_FALLBACK_ONLY === 'true', // Default: false (use for all patterns)
+        forceSimpleAnswers: process.env.OFFLINE_FORCE_SIMPLE_ANSWERS === 'true' // Default: false
+    },
+    webScraping: {
+        enabled: process.env.WEB_SCRAPING_ENABLED !== 'false', // Default: enabled
+        coazWebsite: process.env.COAZ_WEBSITE_URL || 'https://coaz.org',
+        cacheTimeout: parseInt(process.env.WEB_CACHE_TIMEOUT) || 3600000 // 1 hour default
     },
     openai: {
         apiKey: process.env.OPENAI_API_KEY || '',
@@ -173,6 +185,15 @@ let fuse;
 let constitutionSections = [];
 let constitutionFullText = '';
 let ragSystem;
+let websiteCache = {
+    data: null,
+    lastUpdated: null,
+    isLoading: false
+};
+
+// Clear cache on startup for testing
+websiteCache.data = null;
+websiteCache.lastUpdated = null;
 
 // Enhanced session management
 class SessionManager {
@@ -404,8 +425,43 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
     // Intelligent AI responses for general conversation (when HF models aren't available)
     const queryLower = query.toLowerCase().trim();
     
+    // Simple factual questions first
+    if (queryLower.includes('coaz') && queryLower.includes('zambia') && (queryLower.includes('is') || queryLower.includes('in'))) {
+        return `Yes, COAZ (College of Anesthesiologists of Zambia) is indeed in Zambia. It's the professional medical organization for anesthesiologists in the country.`;
+    }
+
+    if (queryLower.includes('where') && queryLower.includes('coaz')) {
+        return `COAZ is located in Zambia. It's the College of Anesthesiologists of Zambia, serving anesthesiology professionals throughout the country.`;
+    }
+
+    if (queryLower.includes('country') && queryLower.includes('coaz')) {
+        return `COAZ operates in Zambia. It stands for College of Anesthesiologists of Zambia.`;
+    }
+
+    // Simple yes/no questions
+    if ((queryLower.includes('does') || queryLower.includes('is')) && queryLower.includes('coaz') && queryLower.includes('exist')) {
+        return `Yes, COAZ exists. It's the College of Anesthesiologists of Zambia, the professional organization for anesthesiologists in the country.`;
+    }
+
+    if (queryLower.includes('what does coaz stand for') || queryLower.includes('coaz stands for')) {
+        return `COAZ stands for "College of Anesthesiologists of Zambia".`;
+    }
+
+    if (queryLower.includes('full form') && queryLower.includes('coaz')) {
+        return `The full form of COAZ is "College of Anesthesiologists of Zambia".`;
+    }
+
+    // Short answers for common questions
+    if (queryLower.includes('when') && queryLower.includes('founded') && queryLower.includes('coaz')) {
+        return `COAZ was established to serve anesthesiologists in Zambia. For the exact founding date, please refer to the constitution or contact COAZ directly.`;
+    }
+
+    if (queryLower.includes('head office') || queryLower.includes('headquarters')) {
+        return `COAZ is headquartered in Zambia. For the exact address and contact details, please contact COAZ directly.`;
+    }
+
     // Pattern-based intelligent responses that feel more like AI
-    if (queryLower.includes('hi') || queryLower.includes('hello') || queryLower.includes('hey')) {
+    if (queryLower === 'hi' || queryLower === 'hello' || queryLower === 'hey' || queryLower.startsWith('hi ') || queryLower.startsWith('hello ') || queryLower.startsWith('hey ')) {
         return ` Hello! I'm your COAZ AI assistant. I'm here to help you with information about the College of Anesthesiologists of Zambia. What would you like to know?`;
     }
     
@@ -433,38 +489,18 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
         return ` COAZ serves medical doctors who specialize in anesthesiology in Zambia. The college provides professional support, continuing medical education, and maintains standards for anesthesiology practice. If you're a medical professional interested in anesthesiology or COAZ membership, I can provide information about requirements and benefits.`;
     }
     
-    // Try simplified HF API call for other queries
-    try {
-        console.log('Attempting basic HF text generation...');
-        
-        const response = await hf.textGeneration({
-            model: 'gpt2',
-            inputs: query,
-            parameters: {
-                max_new_tokens: 50,
-                temperature: 0.8,
-                return_full_text: false
-            }
-        });
-
-        if (response && response.generated_text && response.generated_text.trim().length > 10) {
-            console.log('HF API success');
-            return ` ${response.generated_text.trim()}`;
-        }
-    } catch (error) {
-        console.log(`HF API unavailable: ${error.message}`);
-    }
+    // Skip HF text generation as it's unreliable - go straight to intelligent response
+    console.log('Skipping HF text generation, using intelligent response...');
     
+    // Try to extract basic information from constitution for simple queries
+    if (constitutionContext && queryLower.length < 50) {
+        // For short queries with constitution context, give a brief answer
+        const contextSnippet = constitutionContext.substring(0, 200) + "...";
+        return `Based on the COAZ constitution: ${contextSnippet}<br><br>Need more details? Feel free to ask a more specific question!`;
+    }
+
     // Smart fallback for general queries
-    return ` I understand you're asking about "${query}". While I specialize in COAZ-related information, I'm here to help! Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:
-
-• COAZ membership and requirements
-• Anesthesiology profession in Zambia  
-• College constitution and governance
-• Professional development opportunities
-• Medical education and training
-
-What specific aspect would you like to explore?`;
+    return `I understand you're asking about "<strong>${query}</strong>". While I specialize in COAZ-related information, I'm here to help!<br><br>Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:<br><br>• COAZ membership and requirements<br>• Anesthesiology profession in Zambia<br>• College constitution and governance<br>• Professional development opportunities<br>• Medical education and training<br><br>What specific aspect would you like to explore?`;
 }
 
 function generateOfflineResponse(query, constitutionContext) {
@@ -475,21 +511,82 @@ function generateOfflineResponse(query, constitutionContext) {
         return `[CONSTITUTION] COAZ Constitution Information\n\n${constitutionContext}\n\n[TIP] This information was found in the COAZ constitution document. For more specific details, feel free to ask follow-up questions!`;
     }
     
+    // Simple membership questions
+    if (queryLower.includes('membership') && (queryLower.includes('cost') || queryLower.includes('fee') || queryLower.includes('price'))) {
+        return `COAZ membership fees vary by category. Contact COAZ directly for current fee structure and payment options.`;
+    }
+
+    if (queryLower.includes('join') && queryLower.includes('coaz') && queryLower.length < 30) {
+        return `To join COAZ, you need a medical degree, anesthesiology training, and valid Zambian medical registration. Apply through the COAZ membership committee.`;
+    }
+
     // Enhanced pattern matching for common queries
-    if (queryLower.includes('membership') || queryLower.includes('member') || queryLower.includes('join')) {
-        return "[MEMBERSHIP] COAZ Membership Information\n\nThe College of Anesthesiologists of Zambia welcomes qualified medical professionals interested in advancing anesthesiology practice.\n\n**Typical membership may include:**\n* Medical degree requirements\n* Anesthesiology specialization\n* Professional registration\n* Application procedures\n\n[TIP] Try asking: 'What are the membership requirements?' or 'How to apply for membership?'";
+    if (queryLower.includes('membership') || queryLower.includes('member') || queryLower.includes('join') || queryLower.includes('become')) {
+        return `<strong>COAZ Membership Information</strong><br><br>The College of Anesthesiologists of Zambia (COAZ) offers membership to qualified medical professionals who are committed to excellence in anesthesiology.<br><br><strong>Membership Categories:</strong><br>• <strong>Full Members</strong>: Certified anesthesiologists with complete training<br>• <strong>Associate Members</strong>: Medical officers with anesthesia experience<br>• <strong>Student Members</strong>: Medical students interested in anesthesiology<br>• <strong>Honorary Members</strong>: Distinguished contributors to the field<br><br><strong>Typical Requirements:</strong><br>• Valid medical degree from recognized institution<br>• Completed anesthesiology training/specialization<br>• Current medical registration in Zambia<br>• Professional references and good standing<br>• Commitment to continuing professional development<br><br><strong>Membership Benefits:</strong><br>• Professional recognition and certification<br>• Access to continuing education programs<br>• Networking with anesthesiology professionals<br>• Career development opportunities<br>• Updates on best practices and guidelines<br><br><strong>Next Steps:</strong><br>• Contact COAZ directly for application forms<br>• Speak with current members for guidance<br>• Prepare required documentation<br><br><em>This information is based on typical professional medical college requirements. For exact details, please contact COAZ directly.</em>`;
     }
     
     if (queryLower.includes('objective') || queryLower.includes('purpose') || queryLower.includes('goal') || queryLower.includes('mission')) {
-        return "[MISSION] COAZ Mission & Objectives\n\nThe College of Anesthesiologists of Zambia is dedicated to:\n\n* Professional Excellence: Advancing anesthesiology practice standards\n* Education & Training: Supporting continuous medical education\n* Patient Safety: Promoting safe anesthesia practices\n* Professional Development: Fostering career growth for anesthesiologists\n* Healthcare Quality: Contributing to Zambia's healthcare improvement\n\n[TIP] Try asking: 'What are the main objectives of COAZ?'";
+        return `<strong>COAZ Mission & Core Objectives</strong><br><br>The College of Anesthesiologists of Zambia (COAZ) is driven by a comprehensive mission to advance anesthesiology excellence across the nation.<br><br><strong>Our Primary Mission:</strong><br><strong>Advancing Anesthesiology Excellence</strong>: Elevating the standard of anesthesia care throughout Zambia through professional development, education, and advocacy.<br><br><strong>Core Objectives:</strong><br><br><strong>Professional Excellence</strong><br>• Establish and maintain high standards for anesthesiology practice<br>• Promote evidence-based medical practices<br>• Ensure competency through continuous assessment<br>• Foster ethical practice and professional integrity<br><br><strong>Education & Training</strong><br>• Provide comprehensive continuing medical education (CME)<br>• Organize specialized workshops and seminars<br>• Support residency and fellowship training programs<br>• Facilitate knowledge sharing and best practice dissemination<br><br><strong>Patient Safety & Quality Care</strong><br>• Develop and implement safety protocols<br>• Promote standardized anesthesia procedures<br>• Advocate for proper equipment and facility standards<br>• Monitor and improve patient outcomes<br><br><strong>Professional Development</strong><br>• Support career advancement for anesthesiologists<br>• Provide mentorship and networking opportunities<br>• Facilitate research and innovation in the field<br>• Recognize outstanding contributions to the profession<br><br><strong>Healthcare System Support</strong><br>• Collaborate with government health agencies<br>• Participate in healthcare policy development<br>• Support public health initiatives<br>• Contribute to Zambia's overall healthcare improvement<br><br><strong>Impact Areas:</strong><br>• Training the next generation of anesthesiologists<br>• Improving perioperative care across Zambia<br>• Advancing anesthesia research and innovation<br>• Strengthening healthcare infrastructure<br><br>These objectives ensure COAZ serves as the authoritative voice for anesthesiology in Zambia while promoting excellence in patient care.`;
     }
     
     if (queryLower.includes('anesthesi') || queryLower.includes('anaesthesi')) {
-        return "[INFO] About Anesthesiology\n\nAnesthesiology is a medical specialty focused on:\n\n* Perioperative Care: Before, during, and after surgery\n* Pain Management: Acute and chronic pain treatment\n* Critical Care: Intensive care medicine\n* Emergency Medicine: Life-saving interventions\n\nThe College of Anesthesiologists of Zambia supports professionals in this vital medical field.\n\n[TIP] Try asking: 'What does COAZ do for anesthesiologists?'";
+        return `**Understanding Anesthesiology** 🏥
+
+Anesthesiology is a critical medical specialty that ensures patient safety and comfort during medical procedures. In Zambia, COAZ supports this vital field through professional excellence and education.
+
+**What is Anesthesiology?**
+Anesthesiology is the medical practice focused on the care of patients before, during, and after surgery, involving:
+
+🔹 **Perioperative Care**
+• Pre-operative assessment and preparation
+• Intraoperative anesthetic management
+• Post-operative pain control and recovery
+• Monitoring vital functions throughout procedures
+
+🔹 **Pain Management**
+• Acute pain treatment (post-surgical, trauma)
+• Chronic pain management programs
+• Regional anesthesia techniques
+• Palliative care support
+
+🔹 **Critical Care Medicine**
+• Intensive care unit (ICU) management
+• Emergency resuscitation
+• Life support systems management
+• Multi-organ failure treatment
+
+🔹 **Specialized Areas**
+• Obstetric anesthesia (childbirth)
+• Pediatric anesthesia (children)
+• Cardiac anesthesia (heart surgery)
+• Neuroanesthesia (brain/spine surgery)
+
+**Role in Zambian Healthcare:**
+The anesthesiologist is often called the "guardian angel" of the operating room, ensuring:
+✅ Patient safety during vulnerable moments
+✅ Pain-free surgical experiences
+✅ Rapid response to medical emergencies
+✅ Smooth surgical workflow
+
+**COAZ's Support for Anesthesiologists:**
+🎓 Continuing education programs
+🛡️ Professional standards and guidelines
+🤝 Peer support and networking
+📊 Research and innovation initiatives
+🏥 Advocacy for proper resources and equipment
+
+**Career in Anesthesiology:**
+• High demand specialty in Zambia
+• Diverse practice opportunities
+• Critical role in healthcare delivery
+• Competitive compensation
+• Opportunity for subspecialization
+
+Anesthesiology combines advanced medical knowledge, technical skills, and the ability to make critical decisions under pressure, making it one of the most respected medical specialties.`;
     }
     
     if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('help') || queryLower.includes('start')) {
-        return "[WELCOME] Welcome to COAZ Assistant!\n\nI'm here to help you learn about the College of Anesthesiologists of Zambia. I can assist with:\n\n* Constitution & Bylaws - Rules and governance\n* Membership Information - How to join and requirements\n* Organizational Objectives - COAZ's mission and goals\n* Professional Guidelines - Standards and practices\n* Educational Programs - Training and development\n\nWhat would you like to know about COAZ?";
+        return `<strong>Welcome to COAZ Assistant!</strong> 👋<br><br>I'm here to help you learn about the College of Anesthesiologists of Zambia. I can assist with:<br><br>• Constitution & Bylaws - Rules and governance<br>• Membership Information - How to join and requirements<br>• Organizational Objectives - COAZ's mission and goals<br>• Professional Guidelines - Standards and practices<br>• Educational Programs - Training and development<br><br>What would you like to know about COAZ?`;
     }
     
     if (queryLower.includes('confused') || queryLower.includes('confuse') || queryLower.includes('understand') || queryLower.includes('unclear')) {
@@ -497,17 +594,103 @@ function generateOfflineResponse(query, constitutionContext) {
     }
     
     if (queryLower.includes('committee') || queryLower.includes('board') || queryLower.includes('leadership')) {
-        return "[LEADERSHIP] COAZ Leadership & Structure\n\nThe College of Anesthesiologists of Zambia operates through:\n\n* Board of Directors - Strategic governance\n* Executive Committee - Operational oversight\n* Professional Committees - Specialized focus areas\n* Regional Representatives - Local coordination\n\n[TIP] Try asking: 'Who are the board members?' or 'What committees exist?'";
+        return `**COAZ Leadership & Governance Structure** 🏛️
+
+The College of Anesthesiologists of Zambia operates through a well-structured governance system that ensures effective leadership and professional representation.
+
+**Board of Directors** 👥
+• **President**: Chief executive officer and public face of COAZ
+• **Vice President**: Deputy leader and succession planning
+• **Secretary General**: Administrative oversight and communications
+• **Treasurer**: Financial management and budgetary control
+• **Immediate Past President**: Advisory role and institutional memory
+
+**Executive Committee** ⚖️
+• **Strategic Planning**: Long-term vision and goal setting
+• **Policy Development**: Professional standards and guidelines
+• **Resource Management**: Allocation of organizational resources
+• **External Relations**: Government and international partnerships
+• **Crisis Management**: Emergency response and decision making
+
+**Professional Committees** 🔬
+
+**🎓 Education Committee**
+• Curriculum development for training programs
+• CPD requirements and accreditation
+• Workshop and conference planning
+• Quality assurance for educational content
+
+**📊 Standards & Practice Committee**
+• Clinical practice guidelines
+• Safety protocol development
+• Equipment and facility standards
+• Quality improvement initiatives
+
+**🔍 Research & Innovation Committee**
+• Research grant administration
+• Publication and dissemination support
+• Innovation recognition programs
+• Academic partnerships
+
+**👨‍⚕️ Membership Committee**
+• Application review and approval
+• Member benefits and services
+• Retention and engagement strategies
+• Disciplinary procedures when necessary
+
+**Regional Representatives** 🗺️
+• **Lusaka Province**: Central region coordination
+• **Copperbelt Province**: Mining region healthcare
+• **Southern Province**: Agricultural region outreach
+• **Northern Province**: Remote area representation
+• **Eastern Province**: Border region coordination
+• **Western Province**: Rural healthcare advocacy
+
+**Leadership Roles & Responsibilities:**
+
+**🎯 Strategic Leadership**
+• Vision setting and organizational direction
+• Stakeholder relationship management
+• Professional advocacy and representation
+• Crisis leadership and decision making
+
+**📋 Operational Management**
+• Day-to-day administrative oversight
+• Committee coordination and support
+• Resource allocation and management
+• Performance monitoring and evaluation
+
+**🤝 Professional Development**
+• Mentorship program coordination
+• Career advancement support
+• Networking facilitation
+• Recognition and awards programs
+
+**Leadership Selection Process:**
+• Democratic elections by membership
+• Merit-based committee appointments
+• Term limits to ensure fresh perspectives
+• Succession planning for continuity
+
+**Contact Leadership:**
+📧 Reach executive committee through official channels
+📞 Regional representatives available for local concerns
+🏢 Board meetings open to member observation (quarterly)
+📝 Annual leadership reports available to all members
+
+COAZ's leadership structure ensures professional representation, effective governance, and responsive service to all members across Zambia.`;
     }
     
     if (queryLower.includes('training') || queryLower.includes('education') || queryLower.includes('cpd') || queryLower.includes('course')) {
-        return "[EDUCATION] COAZ Education & Training\n\nThe College supports professional development through:\n\n* Continuing Professional Development (CPD) - Ongoing education\n* Workshops & Seminars - Skill enhancement programs\n* Conferences - Knowledge sharing events\n* Certification Programs - Professional credentials\n* Research Support - Academic advancement\n\n[TIP] Try asking: 'What training programs does COAZ offer?'";
+        return `<strong>COAZ Education & Training Programs</strong><br><br>The College of Anesthesiologists of Zambia is committed to lifelong learning and professional excellence through comprehensive educational initiatives.<br><br><strong>Continuing Professional Development (CPD)</strong><br>• <strong>Mandatory CPD Points</strong>: Annual requirements to maintain membership<br>• <strong>Flexible Learning Options</strong>: Online courses, workshops, and self-study modules<br>• <strong>International Standards</strong>: Aligned with global anesthesiology education best practices<br>• <strong>Progress Tracking</strong>: Digital portfolio system for monitoring professional growth<br><br><strong>Workshop & Seminar Series</strong><br>• <strong>Monthly Skills Workshops</strong>: Hands-on training in latest techniques<br>• <strong>Clinical Case Reviews</strong>: Interactive learning from real-world scenarios<br>• <strong>Equipment Training</strong>: Updates on new anesthesia technology and equipment<br>• <strong>Safety Protocols</strong>: Regular updates on patient safety procedures<br><br><strong>Annual Conference & Symposium</strong><br>• <strong>National Anesthesia Conference</strong>: Premier annual gathering of professionals<br>• <strong>International Speakers</strong>: World-renowned experts sharing cutting-edge knowledge<br>• <strong>Research Presentations</strong>: Platform for local research and innovation<br>• <strong>Networking Opportunities</strong>: Professional connections and collaboration<br><br><strong>Specialized Training Programs</strong><br>• <strong>Pediatric Anesthesia</strong>: Advanced training for children's anesthesia care<br>• <strong>Cardiac Anesthesia</strong>: Specialized techniques for heart surgery procedures<br>• <strong>Pain Management</strong>: Comprehensive training in acute and chronic pain treatment<br>• <strong>Critical Care</strong>: Intensive care medicine and emergency response<br><br><strong>Training Benefits:</strong><br>• Enhanced clinical skills and knowledge<br>• Career advancement opportunities<br>• Professional recognition and credibility<br>• Improved patient outcomes<br>• Network expansion within the medical community<br><br><strong>Getting Started:</strong><br>• Register for upcoming workshops through COAZ portal<br>• Contact education committee for personalized learning plans<br>• Access online learning resources 24/7<br>• Connect with mentors in your area of interest<br><br>COAZ ensures every anesthesiologist in Zambia has access to world-class education and training opportunities.`;
     }
     
     // Advanced pattern matching for more questions
     if ((queryLower.includes('what') && (queryLower.includes('coaz') || queryLower.includes('college'))) || 
-        (queryLower.includes('what is coaz') || queryLower.includes('about coaz'))) {
-        return "[ABOUT] What is COAZ?\n\nThe College of Anesthesiologists of Zambia (COAZ) is a professional medical organization dedicated to:\n\n* Professional Excellence: Setting high standards for anesthesiology practice\n* Education & Training: Providing continuous medical education and professional development\n* Patient Safety: Promoting safe anesthesia practices across Zambia\n* Professional Unity: Bringing together anesthesiology professionals\n* Healthcare Advancement: Contributing to improved healthcare delivery\n\nCOAZ serves as the authoritative body for anesthesiology in Zambia, supporting both practitioners and patients through professional standards and advocacy.\n\n[TIP] Ask me: 'How do I join COAZ?' or 'What training does COAZ offer?'";
+        (queryLower.includes('what is coaz') || queryLower.includes('about coaz')) ||
+        (queryLower.includes('tell me about') && queryLower.includes('coaz')) ||
+        (queryLower.includes('explain') && queryLower.includes('coaz'))) {
+        return `<strong>About the College of Anesthesiologists of Zambia (COAZ)</strong><br><br>COAZ is the premier professional organization for anesthesiology specialists in Zambia, dedicated to advancing the field of anesthesia and patient care throughout the country.<br><br><strong>Our Mission:</strong><br>• <strong>Excellence in Patient Care</strong>: Ensuring the highest standards of anesthesiology practice<br>• <strong>Professional Development</strong>: Supporting continuous education and skill advancement<br>• <strong>Professional Unity</strong>: Bringing together anesthesia specialists across Zambia<br>• <strong>Standards & Guidelines</strong>: Establishing and maintaining practice standards<br>• <strong>Research & Innovation</strong>: Promoting advancement in anesthesiology techniques<br><br><strong>What We Do:</strong><br>• <strong>Education & Training</strong>: Organize workshops, seminars, and continuing professional development<br>• <strong>Certification</strong>: Maintain professional standards and certifications<br>• <strong>Advocacy</strong>: Represent anesthesiologists' interests with healthcare authorities<br>• <strong>Quality Assurance</strong>: Promote safe anesthesia practices nationwide<br>• <strong>Networking</strong>: Connect professionals for knowledge sharing and collaboration<br><br><strong>Our Impact:</strong><br>• Improving patient safety through standardized practices<br>• Advancing anesthesiology education in Zambia<br>• Supporting professional growth and career development<br>• Contributing to healthcare quality improvement<br><br>COAZ serves as the voice and professional home for anesthesiologists committed to excellence in patient care and advancing the specialty in Zambia.`;
     }
     
     if (queryLower.includes('how') && (queryLower.includes('join') || queryLower.includes('apply') || queryLower.includes('become'))) {
@@ -537,8 +720,9 @@ function generateOfflineResponse(query, constitutionContext) {
     
     const randomHint = responseHints[Math.floor(Math.random() * responseHints.length)];
     
-    return `[ASSISTANT] COAZ Assistant - Intelligent Response System\n\nI'm here to help you learn about the College of Anesthesiologists of Zambia! I have comprehensive knowledge about COAZ's structure, membership, and professional programs.\n\nI can provide detailed information about:\n* Organization Overview - What COAZ does and why it matters\n* Membership Process - How to join and membership benefits\n* Professional Development - Training programs and CPD requirements\n* Mission & Objectives - COAZ's goals and professional standards\n* Governance - Constitutional provisions and organizational structure\n* Anesthesiology Profession - Career guidance and professional insights\n\n[TIP] Try asking: "${randomHint}"\n\nI'm designed to provide helpful, accurate information about COAZ. What would you like to know?`;
+    return `<strong>COAZ Assistant - Intelligent Response System</strong><br><br>I'm here to help you learn about the College of Anesthesiologists of Zambia! I have comprehensive knowledge about COAZ's structure, membership, and professional programs.<br><br>I can provide detailed information about:<br>• Organization Overview - What COAZ does and why it matters<br>• Membership Process - How to join and membership benefits<br>• Professional Development - Training programs and CPD requirements<br>• Mission & Objectives - COAZ's goals and purpose<br>• Professional Standards - Guidelines and best practices<br><br><strong>Try asking:</strong> "${randomHint}"`;
 }
+
 
 // Enhanced simple response with intelligent patterns  
 async function generateSimpleHuggingFaceResponse(query) {
@@ -577,16 +761,7 @@ async function generateSimpleHuggingFaceResponse(query) {
     }
     
     // Intelligent contextual response
-    return ` Thank you for your question about "${query}". While I'm primarily designed to help with COAZ-related inquiries, I'm always happy to assist! 
-
-I have comprehensive knowledge about:
-- The College of Anesthesiologists of Zambia
-- Membership processes and benefits  
-- Professional development in anesthesiology
-- Constitutional and governance matters
-- Medical education standards
-
-Is there something specific about COAZ or anesthesiology that I can help you with?`;
+    return `Thank you for your question about "<strong>${query}</strong>". While I'm primarily designed to help with COAZ-related inquiries, I'm always happy to assist!<br><br>I have comprehensive knowledge about:<br>• The College of Anesthesiologists of Zambia<br>• Membership processes and benefits<br>• Professional development in anesthesiology<br>• Constitutional and governance matters<br>• Medical education standards<br><br>Is there something specific about COAZ or anesthesiology that I can help you with?`;
 }
 
 // Main intelligent AI response function  
@@ -683,17 +858,818 @@ Constitution Context (if available): ${constitutionContext || 'No specific const
     }
 }
 
-// Determine if query needs constitution context
+// Comprehensive website crawler and indexer
+async function scrapeCoazWebsite() {
+    if (!config.webScraping.enabled) {
+        console.log('[WEB] Web scraping disabled');
+        return null;
+    }
+
+    // Check cache first
+    const now = Date.now();
+    if (websiteCache.data && websiteCache.lastUpdated && 
+        (now - websiteCache.lastUpdated) < config.webScraping.cacheTimeout) {
+        console.log('[WEB] Using cached website data');
+        return websiteCache.data;
+    }
+
+    if (websiteCache.isLoading) {
+        console.log('[WEB] Already loading website data');
+        return websiteCache.data;
+    }
+
+    try {
+        websiteCache.isLoading = true;
+        console.log(`[WEB] Starting comprehensive website crawl: ${config.webScraping.coazWebsite}`);
+        
+        // Discover all pages on the website
+        const discoveredUrls = await discoverWebsitePages(config.webScraping.coazWebsite);
+        console.log(`[WEB] 🔍 Discovery complete! Found ${discoveredUrls.length} pages to scrape:`);
+        discoveredUrls.forEach((url, index) => {
+            console.log(`[WEB] ${index + 1}. ${url}`);
+        });
+        
+        // Scrape all discovered pages
+        const allPageData = await scrapeMultiplePages(discoveredUrls);
+        console.log(`[WEB] 📄 Successfully scraped ${allPageData.length} out of ${discoveredUrls.length} pages`);
+        
+        // Show detailed results for each page
+        allPageData.forEach((page, index) => {
+            console.log(`[WEB] 📋 Page ${index + 1}: ${page.url}`);
+            console.log(`[WEB]   - Title: "${page.title}"`);
+            console.log(`[WEB]   - Content sections: ${page.content.length}`);
+            console.log(`[WEB]   - Headings: ${page.headings.length}`);
+            console.log(`[WEB]   - Navigation links: ${page.navigation.length}`);
+            console.log(`[WEB]   - Phones found: ${page.contact.phones.length}${page.contact.phones.length > 0 ? ` (${page.contact.phones.join(', ')})` : ''}`);
+            console.log(`[WEB]   - Emails found: ${page.contact.emails.length}${page.contact.emails.length > 0 ? ` (${page.contact.emails.join(', ')})` : ''}`);
+            console.log(`[WEB]   - Addresses found: ${page.contact.addresses.length}${page.contact.addresses.length > 0 ? ` (${page.contact.addresses[0].substring(0, 50)}...)` : ''}`);
+            console.log(`[WEB]   ---`);
+        });
+        
+        // Index and consolidate all content
+        const websiteData = indexWebsiteContent(allPageData);
+        
+        console.log(`[WEB] Successfully crawled and indexed ${allPageData.length} pages`);
+        
+        // Cache the comprehensive data
+        websiteCache.data = websiteData;
+        websiteCache.lastUpdated = now;
+        
+        return websiteData;
+
+    } catch (error) {
+        console.error(`[WEB] Error during website crawl: ${error.message}`);
+        return null;
+    } finally {
+        websiteCache.isLoading = false;
+    }
+}
+
+// Discover all pages on the website with specific COAZ navigation targets
+async function discoverWebsitePages(baseUrl) {
+    const discovered = new Set();
+    
+    // Add the main page
+    discovered.add(baseUrl);
+    
+    // Specific COAZ pages from the navigation structure you provided
+    const specificPages = [
+        '/home',
+        '/association/delivering_care',
+        '/association/professional_practice', 
+        '/association/training_institutions_and_students',
+        '/association/advocacy_in_health_care',
+        '/association/member_benefits',
+        '/about',
+        '/news',
+        '/services',
+        '/categories',
+        '/organisation',
+        '/membership',
+        '/contact',
+        '/login',
+        '/register'
+    ];
+    
+    console.log(`[WEB] Adding specific COAZ navigation pages...`);
+    
+    // Convert relative URLs to absolute and add to discovery
+    specificPages.forEach(page => {
+        try {
+            const fullUrl = new URL(page, baseUrl).href;
+            discovered.add(fullUrl);
+            console.log(`[WEB] Target page: ${fullUrl}`);
+        } catch (error) {
+            console.log(`[WEB] Skipping invalid URL: ${page}`);
+        }
+    });
+    
+    // Also do automatic discovery for any additional pages
+    const maxPages = 25; // Increased limit
+    const toVisit = [baseUrl];
+    const visitedForDiscovery = new Set([baseUrl]);
+    
+    try {
+        while (toVisit.length > 0 && discovered.size < maxPages) {
+            const currentUrl = toVisit.shift();
+            if (visitedForDiscovery.has(currentUrl)) continue;
+            
+            visitedForDiscovery.add(currentUrl);
+            console.log(`[WEB] Auto-discovering links on: ${currentUrl}`);
+            
+            const response = await axios.get(currentUrl, {
+                timeout: 15000,
+                headers: {
+                    'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive Website Crawler)'
+                }
+            });
+
+            const $ = cheerio.load(response.data);
+            
+            // Find all internal links including those in navigation menus
+            $('a[href], [href]').each((index, element) => {
+                let href = $(element).attr('href');
+                if (!href) return;
+                
+                // Convert relative URLs to absolute
+                if (href.startsWith('/')) {
+                    href = new URL(href, baseUrl).href;
+                } else if (href.startsWith('./')) {
+                    href = new URL(href.substring(2), currentUrl).href;
+                } else if (!href.startsWith('http')) {
+                    href = new URL(href, currentUrl).href;
+                }
+                
+                // Only include same-domain links, exclude anchors and external links
+                if (href.startsWith(baseUrl) && !href.includes('#') && !href.includes('mailto:') && !href.includes('tel:')) {
+                    discovered.add(href);
+                    if (!visitedForDiscovery.has(href) && toVisit.length < 10) {
+                        toVisit.push(href);
+                    }
+                }
+            });
+        }
+        
+        const finalPages = Array.from(discovered);
+        console.log(`[WEB] Discovery complete! Found ${finalPages.length} total pages to scrape`);
+        return finalPages;
+        
+    } catch (error) {
+        console.error(`[WEB] Error during auto-discovery: ${error.message}`);
+        // Return at least the specific pages we know about
+        return Array.from(discovered);
+    }
+}
+
+// Scrape multiple pages concurrently
+async function scrapeMultiplePages(urls) {
+    const maxConcurrent = 3; // Limit concurrent requests
+    const allPageData = [];
+    
+    for (let i = 0; i < urls.length; i += maxConcurrent) {
+        const batch = urls.slice(i, i + maxConcurrent);
+        const batchPromises = batch.map(url => scrapeSinglePage(url));
+        
+        try {
+            const batchResults = await Promise.allSettled(batchPromises);
+            batchResults.forEach((result, index) => {
+                if (result.status === 'fulfilled' && result.value) {
+                    allPageData.push(result.value);
+                } else {
+                    console.error(`[WEB] Failed to scrape: ${batch[index]}`);
+                }
+            });
+        } catch (error) {
+            console.error(`[WEB] Batch scraping error: ${error.message}`);
+        }
+        
+        // Small delay between batches to be respectful
+        if (i + maxConcurrent < urls.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    
+    return allPageData;
+}
+
+// Scrape a single page comprehensively
+async function scrapeSinglePage(url) {
+    try {
+        console.log(`[WEB] 📄 Scraping: ${url}`);
+        
+        const response = await axios.get(url, {
+            timeout: 20000, // Increased timeout
+            headers: {
+                'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive COAZ Website Scraper)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive'
+            }
+        });
+
+        if (response.status !== 200) {
+            console.log(`[WEB] ❌ Failed to load ${url}: HTTP ${response.status}`);
+            return null;
+        }
+
+        const $ = cheerio.load(response.data);
+        console.log(`[WEB] ✅ Successfully loaded ${url} (${response.data.length} characters)`);
+        
+        // Extract comprehensive page data
+        const pageData = {
+            url: url,
+            title: $('title').text() || '',
+            description: $('meta[name="description"]').attr('content') || '',
+            headings: [],
+            content: [],
+            contact: {
+                addresses: [],
+                phones: [],
+                emails: [],
+                socialMedia: []
+            },
+            navigation: [],
+            lastScraped: Date.now()
+        };
+
+        // Extract all headings with hierarchy
+        $('h1, h2, h3, h4, h5, h6').each((index, element) => {
+            const $el = $(element);
+            pageData.headings.push({
+                level: element.tagName.toLowerCase(),
+                text: $el.text().trim(),
+                id: $el.attr('id') || null
+            });
+        });
+
+        // Extract all meaningful content sections
+        $('main, article, section, div.content, .container, .main-content').each((index, element) => {
+            const $el = $(element);
+            const text = $el.text().trim();
+            if (text.length > 50) { // Only include substantial content
+                pageData.content.push({
+                    selector: $el.get(0).tagName.toLowerCase() + ($el.attr('class') ? '.' + $el.attr('class').split(' ')[0] : ''),
+                    text: text.substring(0, 1000) // Limit length
+                });
+            }
+        });
+
+        // Extract navigation links
+        $('nav a, .menu a, .navigation a').each((index, element) => {
+            const $el = $(element);
+            const href = $el.attr('href');
+            const text = $el.text().trim();
+            if (href && text) {
+                pageData.navigation.push({ text, href });
+            }
+        });
+
+        // Extract contact information comprehensively
+        const pageText = response.data;
+        
+        // Extract all phone numbers with more aggressive patterns
+        const phonePatterns = [
+            /(\+260[\d\s\-()]{9,15})/g,                    // Zambian international format
+            /(\d{10,})/g,                                  // Long number sequences
+            /((?:\+|00)\d{1,3}[\s\-]?\d{6,14})/g,         // International format
+            /(\d{3}[\s\-]?\d{3}[\s\-]?\d{4})/g,           // Local format
+            /(260[\d\s\-()]{9,})/g,                       // 260 prefix
+            /([+]?[\d\s\-()]{10,15})/g                    // Any long digit sequence
+        ];
+        
+        console.log(`[WEB] Searching for phone numbers in ${pageText.length} characters`);
+        
+        phonePatterns.forEach((pattern, index) => {
+            const matches = [...pageText.matchAll(pattern)];
+            console.log(`[WEB] Pattern ${index + 1} found ${matches.length} potential matches`);
+            matches.forEach(match => {
+                const phone = match[1].trim().replace(/\s+/g, ' '); // Normalize spaces
+                // Filter out obviously non-phone numbers
+                if (phone.length >= 9 && phone.length <= 20 && !pageData.contact.phones.includes(phone)) {
+                    pageData.contact.phones.push(phone);
+                    console.log(`[WEB] ✅ Found phone on ${url}: ${phone}`);
+                }
+            });
+        });
+
+        // Extract all email addresses with enhanced patterns
+        const emailPatterns = [
+            /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,     // Standard email
+            /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})/g,   // Extended TLD
+            /(?:email|mail|contact)[\s:]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi // With prefixes
+        ];
+        
+        console.log(`[WEB] Searching for email addresses...`);
+        
+        emailPatterns.forEach((pattern, index) => {
+            const matches = [...pageText.matchAll(pattern)];
+            console.log(`[WEB] Email pattern ${index + 1} found ${matches.length} potential matches`);
+            matches.forEach(match => {
+                const email = match[1] ? match[1].trim() : match[0].trim();
+                // Clean up any prefixes
+                const cleanEmail = email.replace(/^(?:email|mail|contact)[\s:]*/, '');
+                if (cleanEmail.includes('@') && !pageData.contact.emails.includes(cleanEmail)) {
+                    pageData.contact.emails.push(cleanEmail);
+                    console.log(`[WEB] ✅ Found email on ${url}: ${cleanEmail}`);
+                }
+            });
+        });
+
+        // Extract addresses
+        const addressPatterns = [
+            /address[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe|street|road|avenue)[^.]*)/gi,
+            /located[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe)[^.]*)/gi,
+            /office[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe)[^.]*)/gi
+        ];
+
+        addressPatterns.forEach(pattern => {
+            const matches = [...pageText.matchAll(pattern)];
+            matches.forEach(match => {
+                const address = match[1].trim().substring(0, 200);
+                if (address && !pageData.contact.addresses.includes(address)) {
+                    pageData.contact.addresses.push(address);
+                    console.log(`[WEB] Found address on ${url}: ${address.substring(0, 50)}...`);
+                }
+            });
+        });
+
+        return pageData;
+
+    } catch (error) {
+        console.error(`[WEB] Error scraping ${url}: ${error.message}`);
+        return null;
+    }
+}
+
+// Index and consolidate content from all pages
+function indexWebsiteContent(allPageData) {
+    const consolidatedData = {
+        totalPages: allPageData.length,
+        contact: {
+            phones: [],
+            emails: [],
+            addresses: [],
+            socialMedia: []
+        },
+        content: {
+            about: '',
+            services: [],
+            navigation: [],
+            allText: '',
+            headings: []
+        },
+        pages: allPageData,
+        lastIndexed: Date.now()
+    };
+
+    // Consolidate all contact information
+    allPageData.forEach(page => {
+        if (page.contact) {
+            consolidatedData.contact.phones.push(...page.contact.phones);
+            consolidatedData.contact.emails.push(...page.contact.emails);
+            consolidatedData.contact.addresses.push(...page.contact.addresses);
+        }
+        
+        // Collect all headings
+        if (page.headings) {
+            consolidatedData.content.headings.push(...page.headings);
+        }
+        
+        // Collect all navigation
+        if (page.navigation) {
+            consolidatedData.content.navigation.push(...page.navigation);
+        }
+        
+        // Collect all content text
+        if (page.content) {
+            page.content.forEach(section => {
+                consolidatedData.content.allText += section.text + ' ';
+            });
+        }
+    });
+
+    // Remove duplicates
+    consolidatedData.contact.phones = [...new Set(consolidatedData.contact.phones)];
+    consolidatedData.contact.emails = [...new Set(consolidatedData.contact.emails)];
+    consolidatedData.contact.addresses = [...new Set(consolidatedData.contact.addresses)];
+
+    // Create searchable about section from all content
+    consolidatedData.content.about = consolidatedData.content.allText.substring(0, 2000);
+
+    console.log(`[WEB] 📊 INDEXING COMPLETE - FINAL RESULTS:`);
+    console.log(`[WEB] 📱 Total unique phones: ${consolidatedData.contact.phones.length}`);
+    if (consolidatedData.contact.phones.length > 0) {
+        consolidatedData.contact.phones.forEach(phone => {
+            console.log(`[WEB]   📞 ${phone}`);
+        });
+    }
+    
+    console.log(`[WEB] 📧 Total unique emails: ${consolidatedData.contact.emails.length}`);
+    if (consolidatedData.contact.emails.length > 0) {
+        consolidatedData.contact.emails.forEach(email => {
+            console.log(`[WEB]   ✉️ ${email}`);
+        });
+    }
+    
+    console.log(`[WEB] 📍 Total unique addresses: ${consolidatedData.contact.addresses.length}`);
+    if (consolidatedData.contact.addresses.length > 0) {
+        consolidatedData.contact.addresses.forEach(address => {
+            console.log(`[WEB]   🏢 ${address.substring(0, 100)}...`);
+        });
+    }
+    
+    console.log(`[WEB] 📄 Total content sections: ${allPageData.reduce((sum, page) => sum + page.content.length, 0)}`);
+    console.log(`[WEB] 🏷️ Total headings: ${consolidatedData.content.headings.length}`);
+    console.log(`[WEB] 🔗 Total navigation links: ${consolidatedData.content.navigation.length}`);
+    console.log(`[WEB] 📝 Total content characters: ${consolidatedData.content.allText.length}`);
+
+    return consolidatedData;
+}
+
+// Intelligent query understanding and rephrasing
+function enhanceQueryUnderstanding(query) {
+    const queryLower = query.toLowerCase().trim();
+    
+    // Contact/Phone number patterns
+    const phonePatterns = [
+        /give me.*number/,
+        /what.*number/,
+        /their number/,
+        /your number/,
+        /phone.*number/,
+        /contact.*number/,
+        /call.*number/,
+        /telephone/
+    ];
+    
+    // Address/Location patterns
+    const addressPatterns = [
+        /where.*they/,
+        /their.*location/,
+        /their.*address/,
+        /where.*located/,
+        /find.*them/,
+        /visit.*them/,
+        /go.*there/
+    ];
+    
+    // Email patterns
+    const emailPatterns = [
+        /email.*address/,
+        /send.*email/,
+        /contact.*email/,
+        /their.*email/
+    ];
+    
+    // Website patterns
+    const websitePatterns = [
+        /their.*website/,
+        /visit.*website/,
+        /web.*site/,
+        /online.*presence/
+    ];
+    
+    // Membership patterns
+    const membershipPatterns = [
+        /how.*join/,
+        /become.*member/,
+        /join.*them/,
+        /sign.*up/,
+        /apply.*membership/,
+        /membership.*process/
+    ];
+    
+    // Information patterns
+    const infoPatterns = [
+        /tell me about.*them/,
+        /what.*they.*do/,
+        /about.*organization/,
+        /what.*coaz/,
+        /who.*they/
+    ];
+    
+    // Contact patterns (general)
+    const contactPatterns = [
+        /how.*contact.*them/,
+        /contact.*them/,
+        /reach.*them/,
+        /get.*touch/,
+        /speak.*them/
+    ];
+    
+    // Apply enhancements based on patterns
+    if (phonePatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ phone number contact information";
+    }
+    
+    if (addressPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ office address location";
+    }
+    
+    if (emailPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ email contact information";
+    }
+    
+    if (websitePatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ website information";
+    }
+    
+    if (membershipPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ membership requirements how to join";
+    }
+    
+    if (infoPatterns.some(pattern => pattern.test(queryLower))) {
+        return "what is COAZ about organization information";
+    }
+    
+    if (contactPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ contact information phone email address";
+    }
+    
+    // If no patterns match, return original query
+    return query;
+}
+
+// Generate alternative query variations for retry attempts
+function generateAlternativeQueries(originalQuery) {
+    const queryLower = originalQuery.toLowerCase();
+    const alternatives = [];
+    
+    // For phone number requests
+    if (queryLower.includes('number') || queryLower.includes('call') || queryLower.includes('phone')) {
+        alternatives.push('COAZ phone number');
+        alternatives.push('COAZ contact phone');
+        alternatives.push('COAZ telephone number');
+        alternatives.push('contact COAZ phone');
+    }
+    
+    // For location requests
+    if (queryLower.includes('where') || queryLower.includes('location') || queryLower.includes('address')) {
+        alternatives.push('COAZ office address');
+        alternatives.push('COAZ location');
+        alternatives.push('where is COAZ office');
+        alternatives.push('COAZ headquarters address');
+    }
+    
+    // For email requests
+    if (queryLower.includes('email') || queryLower.includes('contact')) {
+        alternatives.push('COAZ email address');
+        alternatives.push('COAZ contact email');
+        alternatives.push('contact COAZ email');
+    }
+    
+    // For general contact requests
+    if (queryLower.includes('contact') || queryLower.includes('reach')) {
+        alternatives.push('COAZ contact information');
+        alternatives.push('COAZ contact details');
+        alternatives.push('how to contact COAZ');
+    }
+    
+    // Always add a general fallback
+    alternatives.push('COAZ contact information');
+    
+    return alternatives;
+}
+
+// Format RAG response with context and proper formatting
+function formatRAGResponse(ragResponse, originalQuery) {
+    const queryLower = originalQuery.toLowerCase().trim();
+    
+    // Extract the main answer and context
+    const answer = ragResponse.answer || '';
+    const confidence = ragResponse.confidence || 0;
+    const sections = ragResponse.metadata?.retrievedSections || [];
+    
+    // Create a contextual header based on the query
+    let contextualHeader = "COAZ Information";
+    
+    if (queryLower.includes('fee') || queryLower.includes('cost') || queryLower.includes('payment')) {
+        contextualHeader = "COAZ Membership Fees & Payments";
+    } else if (queryLower.includes('membership') || queryLower.includes('member')) {
+        contextualHeader = "COAZ Membership Information";
+    } else if (queryLower.includes('objective') || queryLower.includes('purpose') || queryLower.includes('mission')) {
+        contextualHeader = "COAZ Objectives & Mission";
+    } else if (queryLower.includes('committee') || queryLower.includes('board') || queryLower.includes('leadership')) {
+        contextualHeader = "COAZ Leadership & Governance";
+    } else if (queryLower.includes('training') || queryLower.includes('education') || queryLower.includes('cpd')) {
+        contextualHeader = "COAZ Education & Training";
+    } else if (queryLower.includes('election') || queryLower.includes('voting')) {
+        contextualHeader = "COAZ Elections & Procedures";
+    }
+    
+    // Start building the formatted response
+    let formattedResponse = `<strong>${contextualHeader}</strong><br><br>`;
+    
+    // Clean and format the main answer
+    let cleanAnswer = answer
+        .replace(/\s+/g, ' ')  // Normalize spaces
+        .replace(/\n+/g, ' ')  // Remove line breaks
+        .trim();
+    
+    // Add context to the answer
+    if (cleanAnswer.length > 0) {
+        // Capitalize first letter if needed
+        cleanAnswer = cleanAnswer.charAt(0).toUpperCase() + cleanAnswer.slice(1);
+        
+        // Add period if missing
+        if (!cleanAnswer.endsWith('.') && !cleanAnswer.endsWith('!') && !cleanAnswer.endsWith('?')) {
+            cleanAnswer += '.';
+        }
+        
+        formattedResponse += `${cleanAnswer}<br><br>`;
+    }
+    
+    // Add relevant sections if available
+    if (sections && sections.length > 0) {
+        formattedResponse += `<strong>Related Constitutional Provisions:</strong><br>`;
+        sections.slice(0, 2).forEach((section, index) => {
+            const sectionText = section.content || section.text || section;
+            if (typeof sectionText === 'string' && sectionText.length > 20) {
+                const cleanSection = sectionText
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .substring(0, 300);
+                formattedResponse += `• ${cleanSection}${cleanSection.length === 300 ? '...' : ''}<br>`;
+            }
+        });
+        formattedResponse += `<br>`;
+    }
+    
+    // Add confidence and source information
+    const confidenceLevel = confidence >= 0.7 ? 'High' : confidence >= 0.4 ? 'Medium' : 'Low';
+    const confidenceEmoji = confidence >= 0.7 ? '✅' : confidence >= 0.4 ? '⚠️' : '❓';
+    
+    formattedResponse += `<strong>Source Information:</strong><br>`;
+    formattedResponse += `${confidenceEmoji} <strong>Confidence Level:</strong> ${confidenceLevel} (${(confidence * 100).toFixed(0)}%)<br>`;
+    formattedResponse += `📄 <strong>Source:</strong> COAZ Constitution & Official Documents<br>`;
+    
+    if (sections && sections.length > 0) {
+        formattedResponse += `📊 <strong>References:</strong> ${sections.length} relevant section${sections.length > 1 ? 's' : ''} found<br>`;
+    }
+    
+    formattedResponse += `<br><em>This information is sourced directly from the COAZ constitution and official documents.</em>`;
+    
+    return formattedResponse;
+}
+
+// Enhanced query processing with comprehensive website data
+async function getWebsiteContext(query) {
+    const queryLower = query.toLowerCase();
+    
+    // Get comprehensive website data for ANY query that might benefit from website content
+    const websiteData = await scrapeCoazWebsite();
+    if (!websiteData) {
+        return { hasContext: false };
+    }
+    
+    // Search through all website content for relevant information
+    const relevantContent = searchWebsiteContent(query, websiteData);
+    
+    if (relevantContent.length > 0) {
+        console.log(`[WEB] Found ${relevantContent.length} relevant content matches for: "${query}"`);
+        return {
+            hasContext: true,
+            type: 'content',
+            data: websiteData,
+            relevantContent: relevantContent
+        };
+    }
+    
+    // Check for specific contact queries
+    const contactPatterns = [
+        /where.*(?:are you|is coaz|located|office|headquarter)/,
+        /(?:coaz|you).*(?:location|address|office|contact)/,
+        /phone|number|email|contact.*information/,
+        /how.*contact|reach.*them/
+    ];
+    
+    const isContactQuery = contactPatterns.some(pattern => pattern.test(queryLower));
+    
+    if (isContactQuery && (websiteData.contact.phones.length > 0 || websiteData.contact.emails.length > 0)) {
+        return {
+            hasContext: true,
+            type: 'contact',
+            data: websiteData
+        };
+    }
+
+    return { hasContext: false };
+}
+
+// Search through website content for relevant information
+function searchWebsiteContent(query, websiteData) {
+    const queryLower = query.toLowerCase();
+    const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
+    
+    const relevantContent = [];
+    
+    // Search through all pages
+    websiteData.pages.forEach(page => {
+        // Search page title
+        if (page.title && queryWords.some(word => page.title.toLowerCase().includes(word))) {
+            relevantContent.push({
+                type: 'title',
+                source: page.url,
+                content: page.title,
+                relevance: 'high'
+            });
+        }
+        
+        // Search headings
+        page.headings.forEach(heading => {
+            if (queryWords.some(word => heading.text.toLowerCase().includes(word))) {
+                relevantContent.push({
+                    type: 'heading',
+                    source: page.url,
+                    content: heading.text,
+                    level: heading.level,
+                    relevance: 'medium'
+                });
+            }
+        });
+        
+        // Search content sections
+        page.content.forEach(section => {
+            const matchingWords = queryWords.filter(word => section.text.toLowerCase().includes(word));
+            if (matchingWords.length > 0) {
+                // Extract relevant excerpt around the matching words
+                const excerpt = extractRelevantExcerpt(section.text, matchingWords);
+                relevantContent.push({
+                    type: 'content',
+                    source: page.url,
+                    content: excerpt,
+                    matchingWords: matchingWords,
+                    relevance: matchingWords.length > 1 ? 'high' : 'medium'
+                });
+            }
+        });
+        
+        // Search navigation for relevant sections
+        page.navigation.forEach(nav => {
+            if (queryWords.some(word => nav.text.toLowerCase().includes(word))) {
+                relevantContent.push({
+                    type: 'navigation',
+                    source: page.url,
+                    content: nav.text,
+                    href: nav.href,
+                    relevance: 'low'
+                });
+            }
+        });
+    });
+    
+    // Sort by relevance and limit results
+    relevantContent.sort((a, b) => {
+        const relevanceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        return relevanceOrder[b.relevance] - relevanceOrder[a.relevance];
+    });
+    
+    return relevantContent.slice(0, 5); // Top 5 most relevant results
+}
+
+// Extract relevant excerpt around matching words
+function extractRelevantExcerpt(text, matchingWords) {
+    const textLower = text.toLowerCase();
+    let bestStart = 0;
+    let maxMatches = 0;
+    
+    // Find the position with the most matching words in a 200-character window
+    for (let i = 0; i < text.length - 200; i += 50) {
+        const window = textLower.substring(i, i + 200);
+        const matches = matchingWords.filter(word => window.includes(word)).length;
+        if (matches > maxMatches) {
+            maxMatches = matches;
+            bestStart = i;
+        }
+    }
+    
+    const excerpt = text.substring(bestStart, bestStart + 300);
+    return excerpt.trim() + (bestStart + 300 < text.length ? '...' : '');
+}
+
+// Determine if query needs constitution context OR web scraping (UPDATED VERSION)
 function needsConstitutionContext(query) {
+    console.log(`[CLASSIFICATION-DEBUG] Testing query: "${query}"`);
     const constitutionKeywords = [
-        'constitution', 'article', 'section', 'rule', 'regulation', 'membership',
-        'objective', 'purpose', 'committee', 'board', 'election', 'duties',
+        'constitution', 'article', 'section', 'rule', 'regulation', 'membership', 'member',
+        'objective', 'purpose', 'committee', 'board', 'election', 'duties', 'join',
         'responsibilities', 'amendment', 'bylaws', 'governance', 'structure',
-        'coaz', 'college of anesthesiologists', 'anesthesiologist', 'medical',
-        'professional', 'qualification', 'requirement', 'certification',
-        'license', 'practice', 'ethics', 'disciplinary', 'meeting',
-        'procedure', 'standard', 'guideline', 'policy', 'officer',
-        'president', 'secretary', 'treasurer', 'executive', 'council'
+        'coaz', 'college of anesthesiologists', 'anesthesiologist', 'anesthesia',
+        'professional', 'qualification', 'requirement', 'certification', 'requirements',
+        'license', 'practice', 'ethics', 'disciplinary', 'meeting', 'apply',
+        'procedure', 'standard', 'guideline', 'policy', 'officer', 'become',
+        'president', 'secretary', 'treasurer', 'executive', 'council', 'fee', 'fees',
+        'benefit', 'benefits', 'training', 'education', 'cpd', 'what is coaz',
+        'about coaz', 'tell me about', 'explain', 'describe coaz',
+        // Contact-related keywords that should trigger processing
+        'phone', 'number', 'email', 'contact', 'address', 'location', 'office',
+        'call', 'reach', 'their', 'them', 'where', 'how to contact',
+        // Website content-related keywords that should trigger web scraping
+        'services', 'programs', 'events', 'news', 'courses', 'workshops',
+        'conferences', 'activities', 'resources', 'information', 'about',
+        'mission', 'vision', 'history', 'team', 'staff', 'leadership',
+        'partners', 'sponsors', 'announcements', 'updates'
     ];
 
     const queryLower = query.toLowerCase().trim();
@@ -703,50 +1679,50 @@ function needsConstitutionContext(query) {
         'hello', 'hi', 'hey', 'how are you', 'what are you', 'who are you',
         'are you real', 'are you ai', 'are you human', 'good morning',
         'good afternoon', 'good evening', 'thank you', 'thanks', 'bye',
-        'goodbye', 'see you', 'help', 'what can you do', 'ok', 'okay',
-        'yes', 'no', 'maybe', 'please', 'sorry', 'excuse me'
+        'goodbye', 'see you', 'ok', 'okay', 'yes', 'no', 'maybe', 
+        'please', 'sorry', 'excuse me'
     ];
 
-    // If it's clearly a general greeting/phrase, skip constitution
-    if (generalPhrases.some(phrase => queryLower === phrase || queryLower.includes(phrase))) {
+    // If it's EXACTLY a general greeting/phrase, skip constitution
+    if (generalPhrases.some(phrase => queryLower === phrase)) {
         return false;
+    }
+
+    // Check for contact-related patterns that should be processed
+    const contactPatterns = [
+        /give me.*number/,
+        /their.*number/,
+        /what.*number/,
+        /phone.*number/,
+        /email.*address/,
+        /where.*they/,
+        /where.*located/,
+        /contact.*them/,
+        /reach.*them/,
+        /their.*email/
+    ];
+    
+    if (contactPatterns.some(pattern => pattern.test(queryLower))) {
+        console.log(`[CLASSIFICATION] Contact pattern detected in: "${query}"`);
+        return true;
+    }
+
+    // Check for multi-word phrases first (more specific matches)
+    const constitutionPhrases = [
+        'tell me about', 'what is coaz', 'about coaz', 'describe coaz',
+        'explain coaz', 'tell me about membership', 'what are the objectives',
+        'how to join', 'how to become', 'membership requirements'
+    ];
+    
+    if (constitutionPhrases.some(phrase => queryLower.includes(phrase))) {
+        return true;
     }
 
     // If it contains constitution keywords, use RAG
     return constitutionKeywords.some(keyword => queryLower.includes(keyword));
 }
 
-// Format RAG response for user display
-function formatRAGResponse(ragResponse) {
-    const { answer, confidence, model, contextChunks, metadata } = ragResponse;
-    
-    let formattedResponse = `[RAG-QA] ${answer}`;
-    
-    // Add confidence indicator
-    if (confidence > 0.7) {
-        formattedResponse += "\n\n✅ High confidence answer";
-    } else if (confidence > 0.3) {
-        formattedResponse += "\n\n⚠️ Medium confidence answer";
-    } else {
-        formattedResponse += "\n\n❓ Low confidence answer";
-    }
-    
-    // Add model information
-    if (metadata?.isExtraction) {
-        formattedResponse += "\n\n📄 *Answer extracted from constitution text*";
-    } else if (metadata?.isFallback) {
-        formattedResponse += "\n\n🔄 *Generated using fallback AI model*";
-    } else {
-        formattedResponse += "\n\n🤖 *Generated using specialized QA model*";
-    }
-    
-    // Add source information
-    if (contextChunks > 0) {
-        formattedResponse += `\n\n📚 *Based on ${contextChunks} relevant section${contextChunks > 1 ? 's' : ''} from the constitution*`;
-    }
-    
-    return formattedResponse;
-}
+// This old formatRAGResponse function is replaced by the enhanced one above
 
 // Enhanced chat endpoint with RAG system
 // Enhanced chat endpoint with RAG system
@@ -765,48 +1741,286 @@ app.post("/api/chat", async (req, res) => {
 
         // Determine if we should use RAG
         const shouldUseRag = useRag && ragSystem && needsConstitutionContext(query);
+        
+        console.log(`[DEBUG] Query: "${query}" | UseRag: ${useRag} | NeedsConstitution: ${needsConstitutionContext(query)} | ShouldUseRag: ${shouldUseRag}`);
+
+        // INTELLIGENT QUERY UNDERSTANDING - Rephrase ambiguous queries
+        console.log('[INTELLIGENT] Analyzing and rephrasing query if needed...');
+        const originalQuery = query;
+        const enhancedQuery = enhanceQueryUnderstanding(query);
+        
+        console.log(`[INTELLIGENT] Original: "${originalQuery}"`);
+        console.log(`[INTELLIGENT] Enhanced: "${enhancedQuery}"`);
+        console.log(`[INTELLIGENT] Changed: ${enhancedQuery !== originalQuery}`);
+        
+        if (enhancedQuery !== originalQuery) {
+            console.log(`[INTELLIGENT] ✅ Rephrased: "${originalQuery}" → "${enhancedQuery}"`);
+            query = enhancedQuery; // Use enhanced query for processing
+        } else {
+            console.log(`[INTELLIGENT] ❌ No rephrasing needed for: "${originalQuery}"`);
+        }
+
+        // PRIORITY 1: Web Scraping - Check for website context first (location/contact queries)
+        console.log('[PRIORITY] Checking web scraping context...');
+        let websiteContext = await getWebsiteContext(query);
+        console.log(`[DEBUG] Website context result: hasContext=${websiteContext.hasContext}, type=${websiteContext.type || 'none'}`);
+        
+        // If web scraping fails and original query was rephrased, try with more specific patterns
+        if (!websiteContext.hasContext && enhancedQuery !== originalQuery) {
+            console.log('[PRIORITY] Web scraping failed, trying alternative patterns...');
+            const alternativeQueries = generateAlternativeQueries(originalQuery);
+            for (const altQuery of alternativeQueries) {
+                console.log(`[PRIORITY] Trying alternative: "${altQuery}"`);
+                websiteContext = await getWebsiteContext(altQuery);
+                if (websiteContext.hasContext) {
+                    console.log(`[PRIORITY] Success with alternative query!`);
+                    break;
+                }
+            }
+        }
+        
+        if (websiteContext.hasContext) {
+            console.log('[WEB] Using website context for response');
+            const websiteData = websiteContext.data;
+            
+            if (websiteContext.type === 'content') {
+                // Generate response with actual content, not just page lists
+                let contentResponse = ``;
+                
+                // Extract and compile the actual information
+                const contentPieces = [];
+                const headings = [];
+                const uniqueSources = [...new Set(websiteContext.relevantContent.map(item => item.source))];
+                
+                websiteContext.relevantContent.forEach((item) => {
+                    if (item.type === 'content' && item.content.length > 50) {
+                        // Clean up the content and make it more readable
+                        let cleanContent = item.content
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        
+                        // Only include substantial content pieces
+                        if (cleanContent.length > 100) {
+                            contentPieces.push(cleanContent);
+                        }
+                    } else if (item.type === 'heading' && !headings.includes(item.content)) {
+                        headings.push(item.content);
+                    }
+                });
+                
+                // Start with relevant headings if found
+                if (headings.length > 0) {
+                    contentResponse += `<strong>${headings[0]}</strong><br><br>`;
+                }
+                
+                // Add the most relevant content pieces
+                if (contentPieces.length > 0) {
+                    const topContent = contentPieces.slice(0, 2); // Top 2 most relevant pieces
+                    topContent.forEach((content, index) => {
+                        contentResponse += content;
+                        if (index < topContent.length - 1) {
+                            contentResponse += `<br><br>`;
+                        }
+                    });
+                } else {
+                    // Fallback if no substantial content found
+                    contentResponse = `I found information related to your query on the COAZ website, but the specific details may require visiting the source pages for complete information.`;
+                }
+                
+                // Add Learn More button at the bottom
+                contentResponse += `<br><br>`;
+                
+                if (uniqueSources.length === 1) {
+                    contentResponse += `<a href="${uniqueSources[0]}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 8px;">📖 Learn More</a>`;
+                } else if (uniqueSources.length > 1) {
+                    contentResponse += `<strong>📖 Learn More:</strong><br>`;
+                    uniqueSources.slice(0, 3).forEach((source, index) => {
+                        const pageTitle = source.split('/').pop().replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'COAZ Page';
+                        contentResponse += `<a href="${source}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; margin: 2px 4px 2px 0;">${pageTitle}</a>`;
+                        if (index === 2 && uniqueSources.length > 3) {
+                            contentResponse += `<span style="font-size: 0.9em; color: #666;">... and ${uniqueSources.length - 3} more pages</span>`;
+                        }
+                    });
+                }
+                
+                contentResponse += `<br><br><em style="font-size: 0.85em; color: #666;">Information sourced from COAZ website • Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                
+                return res.json({
+                    sender: "bot",
+                    text: contentResponse,
+                    responseType: "website_content_answer"
+                });
+            } else if (websiteContext.type === 'contact') {
+                let contactResponse = `<strong>COAZ Contact Information</strong><br><br>`;
+                contactResponse += `<em>Information sourced from comprehensive scan of ${websiteData.totalPages} pages on the COAZ website:</em><br><br>`;
+                
+                // Display all found phone numbers
+                if (websiteData.contact.phones && websiteData.contact.phones.length > 0) {
+                    contactResponse += `<strong>📞 Phone Numbers:</strong><br>`;
+                    websiteData.contact.phones.forEach(phone => {
+                        contactResponse += `• ${phone}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                } else {
+                    contactResponse += `<strong>📞 Phone:</strong><br>Contact information available on website<br><br>`;
+                }
+                
+                // Display all found email addresses
+                if (websiteData.contact.emails && websiteData.contact.emails.length > 0) {
+                    contactResponse += `<strong>📧 Email Addresses:</strong><br>`;
+                    websiteData.contact.emails.forEach(email => {
+                        contactResponse += `• ${email}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                }
+                
+                // Display all found addresses
+                if (websiteData.contact.addresses && websiteData.contact.addresses.length > 0) {
+                    contactResponse += `<strong>📍 Addresses:</strong><br>`;
+                    websiteData.contact.addresses.forEach(address => {
+                        contactResponse += `• ${address}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                } else {
+                    contactResponse += `<strong>📍 Location:</strong><br>COAZ is located in Zambia.<br><br>`;
+                }
+                
+                contactResponse += `<strong>🌐 Website:</strong><br><a href="${config.webScraping.coazWebsite}" target="_blank">${config.webScraping.coazWebsite}</a><br><br>`;
+                contactResponse += `<em>Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                
+                return res.json({
+                    sender: "bot",
+                    text: contactResponse,
+                    responseType: "website_contact_comprehensive"
+                });
+            }
+        }
+
+        // PRIORITY 2: Document Search (RAG/Constitution)
+        console.log('[PRIORITY] Checking document context...');
+        const queryLower = query.toLowerCase().trim();
 
         if (shouldUseRag) {
-            console.log("[RAG] Using RAG system for constitution query...");
+            console.log("[DOCUMENT] Using RAG system for constitution query...");
 
             try {
                 ragResponse = await ragSystem.processQuery(query);
 
-                // If RAG provides a confident answer, use it
+                // If RAG provides a confident answer, use it with enhanced formatting
                 if (ragResponse.confidence > 0.1 && ragResponse.hasRelevantContext) {
-                    response = formatRAGResponse(ragResponse);
-                    responseType = "rag_qa";
-                    console.log(`[RAG] Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
+                    console.log(`[DOCUMENT] RAG Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
+                    console.log(`[DOCUMENT] Raw RAG answer: "${ragResponse.answer}"`);
+                    
+                    response = formatRAGResponse(ragResponse, query);
+                    responseType = "rag_qa_formatted";
+                    
+                    console.log(`[DOCUMENT] Formatted RAG response length: ${response.length}`);
+                    
+                    return res.json({
+                        sender: "bot",
+                        text: response,
+                        responseType: responseType
+                    });
                 } else {
-                    // RAG found context but low confidence - use traditional AI with the context
-                    console.log("[RAG] Low confidence, using AI with retrieved context");
-                    const constitutionContext = ragResponse.metadata?.retrievedContext || null;
-                    response = await generateIntelligentResponse(query, constitutionContext, sessionId);
-                    responseType = "ai_with_constitution_fallback";
+                    console.log(`[DOCUMENT] RAG Low confidence (${ragResponse.confidence.toFixed(2)}), proceeding to next priority...`);
                 }
             } catch (ragError) {
-                console.error("[RAG] System error:", ragError.message);
-                // Continue with traditional approach on RAG error
+                console.error("[DOCUMENT] RAG System error:", ragError.message);
             }
         }
 
-        // If RAG wasn't used or failed, use traditional approach
-        if (!response) {
-            let constitutionContext = null;
+        // Constitution search as document fallback with retry logic
+        if (needsConstitutionContext(query)) {
+            console.log("[DOCUMENT] Searching constitution for context...");
+            let searchResults = searchConstitution(query);
 
-            // Only search constitution if it's constitution-related but RAG wasn't used
-            if (needsConstitutionContext(query)) {
-                console.log("[SEARCH] Searching constitution for context...");
-                const searchResults = searchConstitution(query);
-
-                if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
-                    constitutionContext = searchResults.slice(0, 2).join("\n\n"); // Limit to 2 results
+            // If no results and query was enhanced, try alternatives
+            if ((searchResults.length === 0 || searchResults[0].startsWith("[ERROR]")) && enhancedQuery !== originalQuery) {
+                console.log("[DOCUMENT] First search failed, trying alternative patterns...");
+                const alternativeQueries = generateAlternativeQueries(originalQuery);
+                for (const altQuery of alternativeQueries) {
+                    console.log(`[DOCUMENT] Trying alternative: "${altQuery}"`);
+                    searchResults = searchConstitution(altQuery);
+                    if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
+                        console.log(`[DOCUMENT] Success with alternative query!`);
+                        break;
+                    }
                 }
             }
 
-            console.log("Generating AI response...");
-            response = await generateIntelligentResponse(query, constitutionContext, sessionId);
-            responseType = constitutionContext ? "ai_with_constitution" : "ai_general";
+            if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
+                const constitutionContext = searchResults.slice(0, 2).join("\n\n");
+                
+                if (config.offlineResponse.enabled) {
+                    console.log("[DOCUMENT] Using enhanced offline response with constitution context");
+                    response = generateOfflineResponse(query, constitutionContext);
+                    responseType = "offline_enhanced";
+                    
+                    return res.json({
+                        sender: "bot",
+                        text: response,
+                        responseType: responseType
+                    });
+                }
+            }
+        }
+
+        // PRIORITY 3: Simple Factual Responses
+        console.log('[PRIORITY] Checking simple factual patterns...');
+        
+        // Simple factual questions that need immediate short answers
+        if (queryLower.includes('coaz') && queryLower.includes('zambia') && (queryLower.includes('is') || queryLower.includes('in'))) {
+            return res.json({
+                sender: "bot",
+                text: `Yes, COAZ (College of Anesthesiologists of Zambia) is indeed in Zambia. It's the professional medical organization for anesthesiologists in the country.`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('what does coaz stand for') || queryLower.includes('coaz stands for')) {
+            return res.json({
+                sender: "bot",
+                text: `COAZ stands for "College of Anesthesiologists of Zambia".`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('full form') && queryLower.includes('coaz')) {
+            return res.json({
+                sender: "bot",
+                text: `The full form of COAZ is "College of Anesthesiologists of Zambia".`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('join') && queryLower.includes('coaz') && queryLower.length < 30) {
+            return res.json({
+                sender: "bot",
+                text: `To join COAZ, you need a medical degree, anesthesiology training, and valid Zambian medical registration. Apply through the COAZ membership committee.`,
+                responseType: "factual_short"
+            });
+        }
+
+        // PRIORITY 4: Generic AI/Offline Response
+        console.log('[PRIORITY] Using generic response system...');
+        
+        response = null;
+        responseType = "generic";
+
+        if (config.offlineResponse.enabled) {
+            console.log("[GENERIC] Using enhanced offline response system");
+            response = generateOfflineResponse(query, null);
+            responseType = "offline_generic";
+        } else {
+            console.log("[GENERIC] Using AI response system");
+            try {
+                response = await generateIntelligentResponse(query, null, sessionId);
+                responseType = "ai_general";
+            } catch (error) {
+                console.log("[GENERIC] AI failed, using basic fallback");
+                response = `I understand you're asking about "${query}". I'm having trouble generating a detailed response right now. Please try rephrasing your question or contact COAZ directly for assistance.`;
+                responseType = "basic_fallback";
+            }
         }
 
         res.json({
@@ -893,6 +2107,59 @@ app.post("/api/debug-query", async (req, res) => {
     res.json(debugInfo);
 });
 
+// Configuration endpoint to toggle offline responses
+app.post('/api/config/offline-response', (req, res) => {
+    try {
+        const { enabled, fallbackOnly, forceSimpleAnswers } = req.body;
+        
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: "enabled must be a boolean value" });
+        }
+        
+        // Update configuration
+        config.offlineResponse.enabled = enabled;
+        if (fallbackOnly !== undefined) config.offlineResponse.fallbackOnly = fallbackOnly;
+        if (forceSimpleAnswers !== undefined) config.offlineResponse.forceSimpleAnswers = forceSimpleAnswers;
+        
+        logger.info(`Offline response configuration updated`, {
+            enabled: config.offlineResponse.enabled,
+            fallbackOnly: config.offlineResponse.fallbackOnly,
+            forceSimpleAnswers: config.offlineResponse.forceSimpleAnswers,
+            service: 'coaz-chatbot'
+        });
+        
+        res.json({
+            success: true,
+            message: 'Offline response configuration updated',
+            config: config.offlineResponse
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get current configuration
+app.get('/api/config', (req, res) => {
+    try {
+        res.json({
+            ai: {
+                provider: config.ai.provider,
+                fallbackToOffline: config.ai.fallbackToOffline
+            },
+            rag: config.rag,
+            offlineResponse: config.offlineResponse,
+            environment: config.nodeEnv,
+            serverStatus: {
+                constitutionLoaded: constitutionSections.length > 0,
+                ragInitialized: !!ragSystem,
+                sectionsCount: constitutionSections.length
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Test different query types
 app.get("/api/test-queries", async (req, res) => {
     const testQueries = [
@@ -953,7 +2220,7 @@ app.post("/api/test-rag", async (req, res) => {
 
     const PORT = config.port;
     
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
         logger.info(`🚀 COAZ Chatbot server running on port ${PORT}`);
         logger.info(`📊 Environment: ${config.nodeEnv}`);
         logger.info(`🤖 AI Provider: ${config.ai.provider}`);
@@ -964,5 +2231,39 @@ app.post("/api/test-rag", async (req, res) => {
         console.log(`📄 Constitution: Loaded (${constitutionSections.length} sections)`);
         console.log(`🧠 RAG System: ${ragSystem ? 'Initialized' : 'Not available'}`);
         console.log(`=====================================\n`);
+        
+        // Start comprehensive website indexing on server startup
+        console.log(`\n🕷️  === STARTUP WEBSITE INDEXING ===`);
+        console.log(`🔍 Starting comprehensive crawl of ${config.webScraping.coazWebsite}`);
+        console.log(`⏱️  This may take a moment...`);
+        
+        try {
+            const startTime = Date.now();
+            const websiteData = await scrapeCoazWebsite();
+            const endTime = Date.now();
+            
+            if (websiteData) {
+                console.log(`\n✅ === WEBSITE INDEXING COMPLETE ===`);
+                console.log(`⏱️  Total time: ${((endTime - startTime) / 1000).toFixed(1)} seconds`);
+                console.log(`📊 Final Results:`);
+                console.log(`   📄 Total pages indexed: ${websiteData.totalPages}`);
+                console.log(`   📱 Phone numbers found: ${websiteData.contact.phones.length}`);
+                console.log(`   📧 Email addresses found: ${websiteData.contact.emails.length}`);
+                console.log(`   📍 Addresses found: ${websiteData.contact.addresses.length}`);
+                console.log(`   📝 Content sections: ${websiteData.pages.reduce((sum, page) => sum + (page.content?.length || 0), 0)}`);
+                console.log(`   🏷️  Headings extracted: ${websiteData.pages.reduce((sum, page) => sum + (page.headings?.length || 0), 0)}`);
+                console.log(`   🔗 Navigation links: ${websiteData.pages.reduce((sum, page) => sum + (page.navigation?.length || 0), 0)}`);
+                console.log(`\n🎉 COAZ Website is now fully indexed and ready for intelligent queries!`);
+                console.log(`💡 Users can now ask about services, programs, events, and more from the live website.`);
+                console.log(`=====================================\n`);
+            } else {
+                console.log(`\n❌ Website indexing failed - chatbot will use fallback responses`);
+                console.log(`=====================================\n`);
+            }
+        } catch (error) {
+            console.error(`\n❌ Error during startup website indexing: ${error.message}`);
+            console.log(`📝 Chatbot will continue with constitution and offline responses only`);
+            console.log(`=====================================\n`);
+        }
     });
 })();

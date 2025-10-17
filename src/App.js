@@ -20,6 +20,7 @@ import More from "./components/More";
 import CPD from './components/CPD';
 import Development from "./components/Development";
 import Form from "./components/Form";
+import ChatBot from './components/ChatBot'; // Import ChatBot component
 
 
 
@@ -118,6 +119,10 @@ function App() {
                         <dialog.Component/>
                     </div>
                 )}
+                
+                {/* Global ChatBot - Available on all pages with highest z-index */}
+                <ChatBot />
+                
                 </UserProvider>
 
             </GlobalContext.Provider>
