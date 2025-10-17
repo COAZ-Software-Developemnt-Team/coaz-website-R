@@ -153,3 +153,9 @@
 {"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T15:43:15.159Z"}
 {"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-17T15:43:15.160Z"}
 {"level":"info","message":"POST /api/chat - 200 - 69ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-17T15:46:51.673Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:11.392Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:11.397Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:13.822Z"}
+{"level":"info","message":"📊 Environment: development","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:13.823Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:13.824Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-17T19:45:13.825Z"}

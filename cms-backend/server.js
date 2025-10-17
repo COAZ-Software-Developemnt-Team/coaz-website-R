@@ -1179,7 +1179,7 @@ async function scrapeWithJavaScript(url) {
         // Navigate and wait for content to load
         await page.goto(url, { 
             waitUntil: 'networkidle0',
-            timeout: 45000 
+            timeout: 100000 
         });
         
         // Wait for dynamic content to load (SPA render)
