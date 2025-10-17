@@ -437,15 +437,7 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
     console.log('Skipping HF text generation, using intelligent response...');
     
     // Smart fallback for general queries
-    return ` I understand you're asking about "${query}". While I specialize in COAZ-related information, I'm here to help! Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:
-
-• COAZ membership and requirements
-• Anesthesiology profession in Zambia  
-• College constitution and governance
-• Professional development opportunities
-• Medical education and training
-
-What specific aspect would you like to explore?`;
+    return `I understand you're asking about "<strong>${query}</strong>". While I specialize in COAZ-related information, I'm here to help!<br><br>Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:<br><br>• COAZ membership and requirements<br>• Anesthesiology profession in Zambia<br>• College constitution and governance<br>• Professional development opportunities<br>• Medical education and training<br><br>What specific aspect would you like to explore?`;
 }
 
 function generateOfflineResponse(query, constitutionContext) {
@@ -596,7 +588,7 @@ Anesthesiology combines advanced medical knowledge, technical skills, and the ab
     }
     
     if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('help') || queryLower.includes('start')) {
-        return "[WELCOME] Welcome to COAZ Assistant!\n\nI'm here to help you learn about the College of Anesthesiologists of Zambia. I can assist with:\n\n* Constitution & Bylaws - Rules and governance\n* Membership Information - How to join and requirements\n* Organizational Objectives - COAZ's mission and goals\n* Professional Guidelines - Standards and practices\n* Educational Programs - Training and development\n\nWhat would you like to know about COAZ?";
+        return `<strong>Welcome to COAZ Assistant!</strong> 👋<br><br>I'm here to help you learn about the College of Anesthesiologists of Zambia. I can assist with:<br><br>• Constitution & Bylaws - Rules and governance<br>• Membership Information - How to join and requirements<br>• Organizational Objectives - COAZ's mission and goals<br>• Professional Guidelines - Standards and practices<br>• Educational Programs - Training and development<br><br>What would you like to know about COAZ?`;
     }
     
     if (queryLower.includes('confused') || queryLower.includes('confuse') || queryLower.includes('understand') || queryLower.includes('unclear')) {
@@ -807,8 +799,9 @@ COAZ serves as the voice and professional home for anesthesiologists committed t
     
     const randomHint = responseHints[Math.floor(Math.random() * responseHints.length)];
     
-    return `[ASSISTANT] COAZ Assistant - Intelligent Response System\n\nI'm here to help you learn about the College of Anesthesiologists of Zambia! I have comprehensive knowledge about COAZ's structure, membership, and professional programs.\n\nI can provide detailed information about:\n* Organization Overview - What COAZ does and why it matters\n* Membership Process - How to join and membership benefits\n* Professional Development - Training programs and CPD requirements\n* Mission & Objectives - COAZ's goals and professional standards\n* Governance - Constitutional provisions and organizational structure\n* Anesthesiology Profession - Career guidance and professional insights\n\n[TIP] Try asking: "${randomHint}"\n\nI'm designed to provide helpful, accurate information about COAZ. What would you like to know?`;
+    return `<strong>COAZ Assistant - Intelligent Response System</strong><br><br>I'm here to help you learn about the College of Anesthesiologists of Zambia! I have comprehensive knowledge about COAZ's structure, membership, and professional programs.<br><br>I can provide detailed information about:<br>• Organization Overview - What COAZ does and why it matters<br>• Membership Process - How to join and membership benefits<br>• Professional Development - Training programs and CPD requirements<br>• Mission & Objectives - COAZ's goals and purpose<br>• Professional Standards - Guidelines and best practices<br><br><strong>Try asking:</strong> "${randomHint}"`;
 }
+
 
 // Enhanced simple response with intelligent patterns  
 async function generateSimpleHuggingFaceResponse(query) {
@@ -847,16 +840,7 @@ async function generateSimpleHuggingFaceResponse(query) {
     }
     
     // Intelligent contextual response
-    return ` Thank you for your question about "${query}". While I'm primarily designed to help with COAZ-related inquiries, I'm always happy to assist! 
-
-I have comprehensive knowledge about:
-- The College of Anesthesiologists of Zambia
-- Membership processes and benefits  
-- Professional development in anesthesiology
-- Constitutional and governance matters
-- Medical education standards
-
-Is there something specific about COAZ or anesthesiology that I can help you with?`;
+    return `Thank you for your question about "<strong>${query}</strong>". While I'm primarily designed to help with COAZ-related inquiries, I'm always happy to assist!<br><br>I have comprehensive knowledge about:<br>• The College of Anesthesiologists of Zambia<br>• Membership processes and benefits<br>• Professional development in anesthesiology<br>• Constitutional and governance matters<br>• Medical education standards<br><br>Is there something specific about COAZ or anesthesiology that I can help you with?`;
 }
 
 // Main intelligent AI response function  
