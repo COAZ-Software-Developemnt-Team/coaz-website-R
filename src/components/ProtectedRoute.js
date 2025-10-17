@@ -1,6 +1,6 @@
 // src/components/PrivateRoute.js
-import { Navigate, Outlet } from 'react-router-dom';
-import { getCurrentUser } from '../services/userService';
+import {Navigate, Outlet} from 'react-router-dom';
+import {getCurrentUser} from '../services/userService';
 import React from "react";
 
 const ProtectedRoute = () => {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { GoDotFill } from "react-icons/go";
+import {GoDotFill} from "react-icons/go";
 import ReadMoreSection from "./ReadMore";
 
 const AdvocacyInHealth = () => {

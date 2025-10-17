@@ -1,7 +1,7 @@
-import React, {useState,useEffect,useRef,useContext} from 'react'
-import { GlobalContext } from '../contexts/GlobalContext';
-import { IoCloseOutline } from "react-icons/io5";
-import { FaRegCircleDot } from "react-icons/fa6";
+import React, {useContext, useEffect, useRef, useState} from 'react'
+import {GlobalContext} from '../contexts/GlobalContext';
+import {IoCloseOutline} from "react-icons/io5";
+import {FaRegCircleDot} from "react-icons/fa6";
 
 const Person = ({person}) => {
     const {setDialog,screenSize} = useContext(GlobalContext);

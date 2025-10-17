@@ -1,17 +1,13 @@
-
-import React, { useContext,useState, useEffect, useRef } from "react";
-import { PiCaretDown, PiCaretRight } from "react-icons/pi";
-import { Logo } from "./CoazIcons";
-import { FaPaperPlane, FaPhoneAlt } from "react-icons/fa";
-import { FaBars } from "react-icons/fa6";
+import React, {useContext, useEffect, useRef, useState} from "react";
+import {PiCaretDown, PiCaretRight} from "react-icons/pi";
+import {Logo} from "./CoazIcons";
+import {FaPaperPlane, FaPhoneAlt, FaTimes, FaUserCircle} from "react-icons/fa";
+import {FaBars} from "react-icons/fa6";
 import {menus} from "../data";
 import Search from "../components/Search";
-import { renderToStaticMarkup } from 'react-dom/server'
-import { useInRouterContext, NavLink } from "react-router-dom";
-import { FaTimes } from "react-icons/fa";
-import { FaUserCircle } from "react-icons/fa";
-import {Link} from "react-router-dom";
-import { UserContext } from "../contexts/UserContext";
+import {renderToStaticMarkup} from 'react-dom/server'
+import {Link, NavLink, useInRouterContext} from "react-router-dom";
+import {UserContext} from "../contexts/UserContext";
 
 
 const calcWidth = (Component) => {

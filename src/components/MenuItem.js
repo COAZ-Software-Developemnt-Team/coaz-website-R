@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 
 
-
 const MenuItem = ({id,name,Icon,categories,setShowCategories,setCloseCategories,menus,dropDownId,dropDownComponent}) => {
     const [dropDown, setDropDown] = useState(null);
     const [show,setShow] = useState(false);

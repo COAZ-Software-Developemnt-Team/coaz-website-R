@@ -4,18 +4,11 @@ import Menu from "./Menu";
 import {Logo} from "./CoazIcons";
 import Sidebar from "./Sidebar";
 
-import {
-    FaFacebookF,
-    FaInstagram,
-    FaLinkedinIn,
-} from "react-icons/fa";
-import {FaFacebook} from "react-icons/fa6";
+import {FaClock, FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter,} from "react-icons/fa";
+import {FaFacebook, FaLocationDot} from "react-icons/fa6";
 import {IoLogoWhatsapp} from "react-icons/io";
 import {MdEmail} from "react-icons/md";
 import {GiMailbox} from "react-icons/gi";
-import {FaLocationDot} from "react-icons/fa6";
-import {FaClock} from "react-icons/fa";
-import {FaTwitter} from "react-icons/fa";
 
 const Main = () => {
     return (

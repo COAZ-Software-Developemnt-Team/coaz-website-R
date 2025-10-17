@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaRegCircleDot } from "react-icons/fa6";
+import {FaRegCircleDot} from "react-icons/fa6";
 
 const ProfessionalPractice = () => {
   return (

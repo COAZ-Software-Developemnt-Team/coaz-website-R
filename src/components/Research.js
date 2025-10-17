@@ -1,6 +1,6 @@
 import React from "react";
 import ReadMoreSection from "./ReadMore";
-import { GoDotFill } from "react-icons/go";
+import {GoDotFill} from "react-icons/go";
 import Button from "./Button";
 
 const Research = () => {

@@ -1,13 +1,13 @@
 // Association.js
-import React, { useEffect, useState, useContext } from 'react';
-import { GlobalContext } from '../contexts/GlobalContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, {useContext, useEffect, useState} from 'react';
+import {GlobalContext} from '../contexts/GlobalContext';
+import {useLocation, useNavigate} from 'react-router-dom';
 import DeliveringCare from './DeliveringCare';
 import ProfessionalPractice from './ProfessionalPractice';
 import AdvocacyInHealth from './AdvocacyInHealth';
 import MemberBenefits from './MemberBenefits';
 import Page from './Page';
-import { association } from '../data';
+import {association} from '../data';
 
 const Association = () => {
   const { findMenu } = useContext(GlobalContext);

@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react'
 import {Logo} from '../CoazIcons';
 import DropDownItem from './DropDownItem';
-import { categories } from '../data';
+import {categories} from '../data';
 
 const ProfessionalCategoriesMenu = ({show,setShow,close,setClose}) => {
     const handleMouseLeave = (e) => {

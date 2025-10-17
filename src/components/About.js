@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, {useContext, useEffect} from "react";
 import {GlobalContext} from "../contexts/GlobalContext";
 import {Link} from "react-router-dom";
 import Button from "./Button";

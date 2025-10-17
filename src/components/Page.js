@@ -1,7 +1,7 @@
 // Page.js
 import React, {useContext} from 'react'
-import { IoIosArrowForward } from 'react-icons/io';
-import { useParams,useLocation } from 'react-router-dom'
+import {IoIosArrowForward} from 'react-icons/io';
+import {useLocation, useParams} from 'react-router-dom'
 import {UserContext} from "../contexts/UserContext";
 
 const Page = ({children}) => {

@@ -1,9 +1,9 @@
-import React, {useEffect,useState,useContext,useRef} from 'react'
-import { GlobalContext } from '../contexts/GlobalContext';
-import { useLocation } from 'react-router-dom';
-import {news,events} from '../data'
-import { LiaClockSolid } from "react-icons/lia";
-import { SlLocationPin } from "react-icons/sl";
+import React, {useContext, useEffect, useRef, useState} from 'react'
+import {GlobalContext} from '../contexts/GlobalContext';
+import {useLocation} from 'react-router-dom';
+import {events, news} from '../data'
+import {LiaClockSolid} from "react-icons/lia";
+import {SlLocationPin} from "react-icons/sl";
 import CMS from '../components/CMS'
 
 
