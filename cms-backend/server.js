@@ -951,22 +951,18 @@ app.post("/api/test-rag", async (req, res) => {
     initFuse();
     initRAGSystem();
 
-    const PORT = process.env.PORT || 8080;
-    const corsOptions = {
-        origin: function (origin, callback) {
-            // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) return callback(null, true);
-
-            if (config.corsOrigins.indexOf(origin) !== -1) {
-                callback(null, true);
-            } else {
-                console.log('CORS blocked for origin:', origin);
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        methods: ['GET', 'POST'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: false
-    };
-    app.use(cors(corsOptions));
+    const PORT = config.port;
+    
+    app.listen(PORT, () => {
+        logger.info(`🚀 COAZ Chatbot server running on port ${PORT}`);
+        logger.info(`📊 Environment: ${config.nodeEnv}`);
+        logger.info(`🤖 AI Provider: ${config.ai.provider}`);
+        logger.info(`🌐 CORS Origins: ${config.corsOrigins.join(', ')}`);
+        console.log(`\n=== COAZ Chatbot Server Started ===`);
+        console.log(`🌐 Server: http://localhost:${PORT}`);
+        console.log(`🤖 AI Provider: ${config.ai.provider}`);
+        console.log(`📄 Constitution: Loaded (${constitutionSections.length} sections)`);
+        console.log(`🧠 RAG System: ${ragSystem ? 'Initialized' : 'Not available'}`);
+        console.log(`=====================================\n`);
+    });
 })();
