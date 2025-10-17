@@ -882,35 +882,34 @@ async function scrapeCoazWebsite() {
         websiteCache.isLoading = true;
         console.log(`[WEB] Starting comprehensive website crawl: ${config.webScraping.coazWebsite}`);
         
-        // For now, let's start with just the main page to debug contact extraction
-        // Then we'll expand to full site crawling once it's working
-        console.log(`[WEB] DEBUG MODE: Scraping main page only first`);
-        const mainPageData = await scrapeSinglePage(config.webScraping.coazWebsite);
+        // Discover all pages on the website
+        const discoveredUrls = await discoverWebsitePages(config.webScraping.coazWebsite);
+        console.log(`[WEB] 🔍 Discovery complete! Found ${discoveredUrls.length} pages to scrape:`);
+        discoveredUrls.forEach((url, index) => {
+            console.log(`[WEB] ${index + 1}. ${url}`);
+        });
         
-        if (!mainPageData) {
-            console.log(`[WEB] Failed to scrape main page, skipping crawler`);
-            return null;
-        }
+        // Scrape all discovered pages
+        const allPageData = await scrapeMultiplePages(discoveredUrls);
+        console.log(`[WEB] 📄 Successfully scraped ${allPageData.length} out of ${discoveredUrls.length} pages`);
         
-        // For testing, let's see what we got from the main page
-        console.log(`[WEB] Main page extraction results:`);
-        console.log(`[WEB] - Phones found: ${mainPageData.contact.phones.length}`);
-        console.log(`[WEB] - Emails found: ${mainPageData.contact.emails.length}`);
-        console.log(`[WEB] - Addresses found: ${mainPageData.contact.addresses.length}`);
+        // Show detailed results for each page
+        allPageData.forEach((page, index) => {
+            console.log(`[WEB] 📋 Page ${index + 1}: ${page.url}`);
+            console.log(`[WEB]   - Title: "${page.title}"`);
+            console.log(`[WEB]   - Content sections: ${page.content.length}`);
+            console.log(`[WEB]   - Headings: ${page.headings.length}`);
+            console.log(`[WEB]   - Navigation links: ${page.navigation.length}`);
+            console.log(`[WEB]   - Phones found: ${page.contact.phones.length}${page.contact.phones.length > 0 ? ` (${page.contact.phones.join(', ')})` : ''}`);
+            console.log(`[WEB]   - Emails found: ${page.contact.emails.length}${page.contact.emails.length > 0 ? ` (${page.contact.emails.join(', ')})` : ''}`);
+            console.log(`[WEB]   - Addresses found: ${page.contact.addresses.length}${page.contact.addresses.length > 0 ? ` (${page.contact.addresses[0].substring(0, 50)}...)` : ''}`);
+            console.log(`[WEB]   ---`);
+        });
         
-        // Create a simple consolidated structure for now
-        const websiteData = {
-            totalPages: 1,
-            contact: mainPageData.contact,
-            content: {
-                about: mainPageData.content.map(c => c.text).join(' ').substring(0, 1000),
-                allText: mainPageData.content.map(c => c.text).join(' ')
-            },
-            pages: [mainPageData],
-            lastIndexed: Date.now()
-        };
+        // Index and consolidate all content
+        const websiteData = indexWebsiteContent(allPageData);
         
-        console.log(`[WEB] Successfully crawled and indexed 1 page (debug mode)`);
+        console.log(`[WEB] Successfully crawled and indexed ${allPageData.length} pages`);
         
         // Cache the comprehensive data
         websiteCache.data = websiteData;
@@ -1204,7 +1203,32 @@ function indexWebsiteContent(allPageData) {
     // Create searchable about section from all content
     consolidatedData.content.about = consolidatedData.content.allText.substring(0, 2000);
 
-    console.log(`[WEB] Indexed content: ${consolidatedData.contact.phones.length} phones, ${consolidatedData.contact.emails.length} emails, ${consolidatedData.contact.addresses.length} addresses`);
+    console.log(`[WEB] 📊 INDEXING COMPLETE - FINAL RESULTS:`);
+    console.log(`[WEB] 📱 Total unique phones: ${consolidatedData.contact.phones.length}`);
+    if (consolidatedData.contact.phones.length > 0) {
+        consolidatedData.contact.phones.forEach(phone => {
+            console.log(`[WEB]   📞 ${phone}`);
+        });
+    }
+    
+    console.log(`[WEB] 📧 Total unique emails: ${consolidatedData.contact.emails.length}`);
+    if (consolidatedData.contact.emails.length > 0) {
+        consolidatedData.contact.emails.forEach(email => {
+            console.log(`[WEB]   ✉️ ${email}`);
+        });
+    }
+    
+    console.log(`[WEB] 📍 Total unique addresses: ${consolidatedData.contact.addresses.length}`);
+    if (consolidatedData.contact.addresses.length > 0) {
+        consolidatedData.contact.addresses.forEach(address => {
+            console.log(`[WEB]   🏢 ${address.substring(0, 100)}...`);
+        });
+    }
+    
+    console.log(`[WEB] 📄 Total content sections: ${allPageData.reduce((sum, page) => sum + page.content.length, 0)}`);
+    console.log(`[WEB] 🏷️ Total headings: ${consolidatedData.content.headings.length}`);
+    console.log(`[WEB] 🔗 Total navigation links: ${consolidatedData.content.navigation.length}`);
+    console.log(`[WEB] 📝 Total content characters: ${consolidatedData.content.allText.length}`);
 
     return consolidatedData;
 }
@@ -1435,43 +1459,144 @@ function formatRAGResponse(ragResponse, originalQuery) {
     return formattedResponse;
 }
 
-// Enhanced query processing with website data
+// Enhanced query processing with comprehensive website data
 async function getWebsiteContext(query) {
     const queryLower = query.toLowerCase();
     
-    // Check if query is asking for location/contact info
-    // Enhanced patterns to catch more location queries
-    const locationPatterns = [
+    // Get comprehensive website data for ANY query that might benefit from website content
+    const websiteData = await scrapeCoazWebsite();
+    if (!websiteData) {
+        return { hasContext: false };
+    }
+    
+    // Search through all website content for relevant information
+    const relevantContent = searchWebsiteContent(query, websiteData);
+    
+    if (relevantContent.length > 0) {
+        console.log(`[WEB] Found ${relevantContent.length} relevant content matches for: "${query}"`);
+        return {
+            hasContext: true,
+            type: 'content',
+            data: websiteData,
+            relevantContent: relevantContent
+        };
+    }
+    
+    // Check for specific contact queries
+    const contactPatterns = [
         /where.*(?:are you|is coaz|located|office|headquarter)/,
         /(?:coaz|you).*(?:location|address|office|contact)/,
-        /location.*(?:coaz|office)/,
-        /address.*(?:coaz|office)/,
-        /contact.*(?:coaz|information)/,
-        /office.*(?:coaz|address)/,
-        /headquarter/,
-        /where.*you.*located/,
-        /where.*located/
+        /phone|number|email|contact.*information/,
+        /how.*contact|reach.*them/
     ];
     
-    const isLocationQuery = locationPatterns.some(pattern => pattern.test(queryLower));
+    const isContactQuery = contactPatterns.some(pattern => pattern.test(queryLower));
     
-    if (isLocationQuery) {
-        
-        const websiteData = await scrapeCoazWebsite();
-        if (websiteData) {
-            return {
-                hasContext: true,
-                type: 'contact',
-                data: websiteData
-            };
-        }
+    if (isContactQuery && (websiteData.contact.phones.length > 0 || websiteData.contact.emails.length > 0)) {
+        return {
+            hasContext: true,
+            type: 'contact',
+            data: websiteData
+        };
     }
 
     return { hasContext: false };
 }
 
-// Determine if query needs constitution context OR web scraping
+// Search through website content for relevant information
+function searchWebsiteContent(query, websiteData) {
+    const queryLower = query.toLowerCase();
+    const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
+    
+    const relevantContent = [];
+    
+    // Search through all pages
+    websiteData.pages.forEach(page => {
+        // Search page title
+        if (page.title && queryWords.some(word => page.title.toLowerCase().includes(word))) {
+            relevantContent.push({
+                type: 'title',
+                source: page.url,
+                content: page.title,
+                relevance: 'high'
+            });
+        }
+        
+        // Search headings
+        page.headings.forEach(heading => {
+            if (queryWords.some(word => heading.text.toLowerCase().includes(word))) {
+                relevantContent.push({
+                    type: 'heading',
+                    source: page.url,
+                    content: heading.text,
+                    level: heading.level,
+                    relevance: 'medium'
+                });
+            }
+        });
+        
+        // Search content sections
+        page.content.forEach(section => {
+            const matchingWords = queryWords.filter(word => section.text.toLowerCase().includes(word));
+            if (matchingWords.length > 0) {
+                // Extract relevant excerpt around the matching words
+                const excerpt = extractRelevantExcerpt(section.text, matchingWords);
+                relevantContent.push({
+                    type: 'content',
+                    source: page.url,
+                    content: excerpt,
+                    matchingWords: matchingWords,
+                    relevance: matchingWords.length > 1 ? 'high' : 'medium'
+                });
+            }
+        });
+        
+        // Search navigation for relevant sections
+        page.navigation.forEach(nav => {
+            if (queryWords.some(word => nav.text.toLowerCase().includes(word))) {
+                relevantContent.push({
+                    type: 'navigation',
+                    source: page.url,
+                    content: nav.text,
+                    href: nav.href,
+                    relevance: 'low'
+                });
+            }
+        });
+    });
+    
+    // Sort by relevance and limit results
+    relevantContent.sort((a, b) => {
+        const relevanceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        return relevanceOrder[b.relevance] - relevanceOrder[a.relevance];
+    });
+    
+    return relevantContent.slice(0, 5); // Top 5 most relevant results
+}
+
+// Extract relevant excerpt around matching words
+function extractRelevantExcerpt(text, matchingWords) {
+    const textLower = text.toLowerCase();
+    let bestStart = 0;
+    let maxMatches = 0;
+    
+    // Find the position with the most matching words in a 200-character window
+    for (let i = 0; i < text.length - 200; i += 50) {
+        const window = textLower.substring(i, i + 200);
+        const matches = matchingWords.filter(word => window.includes(word)).length;
+        if (matches > maxMatches) {
+            maxMatches = matches;
+            bestStart = i;
+        }
+    }
+    
+    const excerpt = text.substring(bestStart, bestStart + 300);
+    return excerpt.trim() + (bestStart + 300 < text.length ? '...' : '');
+}
+
+// Determine if query needs constitution context OR web scraping (UPDATED VERSION)
 function needsConstitutionContext(query) {
+    console.log(`[CLASSIFICATION-DEBUG] Testing query: "${query}"`);
     const constitutionKeywords = [
         'constitution', 'article', 'section', 'rule', 'regulation', 'membership', 'member',
         'objective', 'purpose', 'committee', 'board', 'election', 'duties', 'join',
@@ -1485,7 +1610,12 @@ function needsConstitutionContext(query) {
         'about coaz', 'tell me about', 'explain', 'describe coaz',
         // Contact-related keywords that should trigger processing
         'phone', 'number', 'email', 'contact', 'address', 'location', 'office',
-        'call', 'reach', 'their', 'them', 'where', 'how to contact'
+        'call', 'reach', 'their', 'them', 'where', 'how to contact',
+        // Website content-related keywords that should trigger web scraping
+        'services', 'programs', 'events', 'news', 'courses', 'workshops',
+        'conferences', 'activities', 'resources', 'information', 'about',
+        'mission', 'vision', 'history', 'team', 'staff', 'leadership',
+        'partners', 'sponsors', 'announcements', 'updates'
     ];
 
     const queryLower = query.toLowerCase().trim();
@@ -1598,7 +1728,40 @@ app.post("/api/chat", async (req, res) => {
             console.log('[WEB] Using website context for response');
             const websiteData = websiteContext.data;
             
-            if (websiteContext.type === 'contact') {
+            if (websiteContext.type === 'content') {
+                // Generate response from website content
+                let contentResponse = `<strong>Information from COAZ Website</strong><br><br>`;
+                contentResponse += `<em>Found relevant information from ${websiteData.totalPages} pages on the COAZ website:</em><br><br>`;
+                
+                websiteContext.relevantContent.forEach((item, index) => {
+                    if (item.type === 'title') {
+                        contentResponse += `<strong>📄 Page: ${item.content}</strong><br>`;
+                    } else if (item.type === 'heading') {
+                        contentResponse += `<strong>📋 ${item.content}</strong><br>`;
+                    } else if (item.type === 'content') {
+                        contentResponse += `${item.content}<br><br>`;
+                    }
+                    
+                    if (index < websiteContext.relevantContent.length - 1) {
+                        contentResponse += `<br>`;
+                    }
+                });
+                
+                // Add source information
+                const uniqueSources = [...new Set(websiteContext.relevantContent.map(item => item.source))];
+                contentResponse += `<br><strong>🔗 Sources:</strong><br>`;
+                uniqueSources.forEach(source => {
+                    contentResponse += `• <a href="${source}" target="_blank">${source}</a><br>`;
+                });
+                
+                contentResponse += `<br><em>Information last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                
+                return res.json({
+                    sender: "bot",
+                    text: contentResponse,
+                    responseType: "website_content_search"
+                });
+            } else if (websiteContext.type === 'contact') {
                 let contactResponse = `<strong>COAZ Contact Information</strong><br><br>`;
                 contactResponse += `<em>Information sourced from comprehensive scan of ${websiteData.totalPages} pages on the COAZ website:</em><br><br>`;
                 
