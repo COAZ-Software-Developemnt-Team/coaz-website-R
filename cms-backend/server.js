@@ -1763,6 +1763,7 @@ app.post("/api/chat", async (req, res) => {
         // PRIORITY 1: Web Scraping - Check for website context first (location/contact queries)
         console.log('[PRIORITY] Checking web scraping context...');
         let websiteContext = await getWebsiteContext(query);
+        console.log(`[DEBUG] Website context result: hasContext=${websiteContext.hasContext}, type=${websiteContext.type || 'none'}`);
         
         // If web scraping fails and original query was rephrased, try with more specific patterns
         if (!websiteContext.hasContext && enhancedQuery !== originalQuery) {
@@ -1783,37 +1784,71 @@ app.post("/api/chat", async (req, res) => {
             const websiteData = websiteContext.data;
             
             if (websiteContext.type === 'content') {
-                // Generate response from website content
-                let contentResponse = `<strong>Information from COAZ Website</strong><br><br>`;
-                contentResponse += `<em>Found relevant information from ${websiteData.totalPages} pages on the COAZ website:</em><br><br>`;
+                // Generate response with actual content, not just page lists
+                let contentResponse = ``;
                 
-                websiteContext.relevantContent.forEach((item, index) => {
-                    if (item.type === 'title') {
-                        contentResponse += `<strong>📄 Page: ${item.content}</strong><br>`;
-                    } else if (item.type === 'heading') {
-                        contentResponse += `<strong>📋 ${item.content}</strong><br>`;
-                    } else if (item.type === 'content') {
-                        contentResponse += `${item.content}<br><br>`;
-                    }
-                    
-                    if (index < websiteContext.relevantContent.length - 1) {
-                        contentResponse += `<br>`;
-                    }
-                });
-                
-                // Add source information
+                // Extract and compile the actual information
+                const contentPieces = [];
+                const headings = [];
                 const uniqueSources = [...new Set(websiteContext.relevantContent.map(item => item.source))];
-                contentResponse += `<br><strong>🔗 Sources:</strong><br>`;
-                uniqueSources.forEach(source => {
-                    contentResponse += `• <a href="${source}" target="_blank">${source}</a><br>`;
+                
+                websiteContext.relevantContent.forEach((item) => {
+                    if (item.type === 'content' && item.content.length > 50) {
+                        // Clean up the content and make it more readable
+                        let cleanContent = item.content
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        
+                        // Only include substantial content pieces
+                        if (cleanContent.length > 100) {
+                            contentPieces.push(cleanContent);
+                        }
+                    } else if (item.type === 'heading' && !headings.includes(item.content)) {
+                        headings.push(item.content);
+                    }
                 });
                 
-                contentResponse += `<br><em>Information last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                // Start with relevant headings if found
+                if (headings.length > 0) {
+                    contentResponse += `<strong>${headings[0]}</strong><br><br>`;
+                }
+                
+                // Add the most relevant content pieces
+                if (contentPieces.length > 0) {
+                    const topContent = contentPieces.slice(0, 2); // Top 2 most relevant pieces
+                    topContent.forEach((content, index) => {
+                        contentResponse += content;
+                        if (index < topContent.length - 1) {
+                            contentResponse += `<br><br>`;
+                        }
+                    });
+                } else {
+                    // Fallback if no substantial content found
+                    contentResponse = `I found information related to your query on the COAZ website, but the specific details may require visiting the source pages for complete information.`;
+                }
+                
+                // Add Learn More button at the bottom
+                contentResponse += `<br><br>`;
+                
+                if (uniqueSources.length === 1) {
+                    contentResponse += `<a href="${uniqueSources[0]}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 8px;">📖 Learn More</a>`;
+                } else if (uniqueSources.length > 1) {
+                    contentResponse += `<strong>📖 Learn More:</strong><br>`;
+                    uniqueSources.slice(0, 3).forEach((source, index) => {
+                        const pageTitle = source.split('/').pop().replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'COAZ Page';
+                        contentResponse += `<a href="${source}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; margin: 2px 4px 2px 0;">${pageTitle}</a>`;
+                        if (index === 2 && uniqueSources.length > 3) {
+                            contentResponse += `<span style="font-size: 0.9em; color: #666;">... and ${uniqueSources.length - 3} more pages</span>`;
+                        }
+                    });
+                }
+                
+                contentResponse += `<br><br><em style="font-size: 0.85em; color: #666;">Information sourced from COAZ website • Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
                 
                 return res.json({
                     sender: "bot",
                     text: contentResponse,
-                    responseType: "website_content_search"
+                    responseType: "website_content_answer"
                 });
             } else if (websiteContext.type === 'contact') {
                 let contactResponse = `<strong>COAZ Contact Information</strong><br><br>`;
