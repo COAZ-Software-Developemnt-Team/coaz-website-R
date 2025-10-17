@@ -17,6 +17,8 @@ const { body, validationResult } = require('express-validator');
 const RAGSystem = require('./rag-system');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
+const { JSDOM } = require('jsdom');
 
 const app = express();
 
@@ -1557,75 +1559,136 @@ async function getWebsiteContext(query) {
     return { hasContext: false };
 }
 
-// Search through website content for relevant information
+// Enhanced website content search with intelligent content extraction
 function searchWebsiteContent(query, websiteData) {
     const queryLower = query.toLowerCase();
     const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
     
+    console.log(`[WEB-SEARCH] Searching for: "${query}" across ${websiteData.pages.length} pages`);
+    console.log(`[WEB-SEARCH] Query words: ${queryWords.join(', ')}`);
+    
     const relevantContent = [];
     
-    // Search through all pages
+    // Search through all pages with enhanced content extraction
     websiteData.pages.forEach(page => {
+        console.log(`[WEB-SEARCH] Searching page: ${page.url}`);
+        
         // Search page title
         if (page.title && queryWords.some(word => page.title.toLowerCase().includes(word))) {
             relevantContent.push({
                 type: 'title',
                 source: page.url,
                 content: page.title,
+                fullText: page.title,
                 relevance: 'high'
             });
         }
         
-        // Search headings
-        page.headings.forEach(heading => {
+        // Search headings with surrounding content
+        page.headings.forEach((heading, headingIndex) => {
             if (queryWords.some(word => heading.text.toLowerCase().includes(word))) {
+                // Try to find content near this heading
+                let surroundingContent = '';
+                if (page.content && page.content.length > headingIndex) {
+                    surroundingContent = page.content[headingIndex]?.text || '';
+                }
+                
                 relevantContent.push({
                     type: 'heading',
                     source: page.url,
                     content: heading.text,
+                    fullText: `${heading.text}. ${surroundingContent.substring(0, 500)}`,
                     level: heading.level,
-                    relevance: 'medium'
+                    relevance: 'high'
                 });
             }
         });
         
-        // Search content sections
-        page.content.forEach(section => {
-            const matchingWords = queryWords.filter(word => section.text.toLowerCase().includes(word));
+        // Enhanced content section search
+        page.content.forEach((section, sectionIndex) => {
+            const sectionText = section.text.toLowerCase();
+            const matchingWords = queryWords.filter(word => sectionText.includes(word));
+            
             if (matchingWords.length > 0) {
-                // Extract relevant excerpt around the matching words
-                const excerpt = extractRelevantExcerpt(section.text, matchingWords);
+                // Extract more substantial content around matching words
+                const fullContext = extractEnhancedContext(section.text, matchingWords, queryLower);
+                
                 relevantContent.push({
                     type: 'content',
                     source: page.url,
-                    content: excerpt,
+                    content: fullContext.excerpt,
+                    fullText: fullContext.fullText,
                     matchingWords: matchingWords,
-                    relevance: matchingWords.length > 1 ? 'high' : 'medium'
+                    relevance: matchingWords.length > 1 ? 'high' : 'medium',
+                    contextScore: fullContext.score
                 });
+            }
+        });
+    });
+    
+    // Sort by relevance and context score
+    relevantContent.sort((a, b) => {
+        const relevanceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        const relevanceScore = relevanceOrder[b.relevance] - relevanceOrder[a.relevance];
+        if (relevanceScore !== 0) return relevanceScore;
+        return (b.contextScore || 0) - (a.contextScore || 0);
+    });
+    
+    console.log(`[WEB-SEARCH] Found ${relevantContent.length} relevant content pieces`);
+    return relevantContent.slice(0, 8); // Increased to get more content for RAG
+}
+
+// Enhanced context extraction for better content understanding
+function extractEnhancedContext(text, matchingWords, originalQuery) {
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const relevantSentences = [];
+    let contextScore = 0;
+    
+    sentences.forEach(sentence => {
+        const sentenceLower = sentence.toLowerCase();
+        let sentenceScore = 0;
+        
+        // Score based on matching words
+        matchingWords.forEach(word => {
+            if (sentenceLower.includes(word)) {
+                sentenceScore += 2;
             }
         });
         
-        // Search navigation for relevant sections
-        page.navigation.forEach(nav => {
-            if (queryWords.some(word => nav.text.toLowerCase().includes(word))) {
-                relevantContent.push({
-                    type: 'navigation',
-                    source: page.url,
-                    content: nav.text,
-                    href: nav.href,
-                    relevance: 'low'
-                });
-            }
-        });
+        // Score based on query similarity
+        if (sentenceLower.includes(originalQuery)) {
+            sentenceScore += 5;
+        }
+        
+        // Bonus for informative sentences
+        if (sentenceLower.includes('founded') || sentenceLower.includes('established') || 
+            sentenceLower.includes('started') || sentenceLower.includes('began') ||
+            sentenceLower.includes('history') || sentenceLower.includes('mission') ||
+            sentenceLower.includes('purpose') || sentenceLower.includes('objective')) {
+            sentenceScore += 3;
+        }
+        
+        if (sentenceScore > 0) {
+            relevantSentences.push({
+                sentence: sentence.trim(),
+                score: sentenceScore
+            });
+            contextScore += sentenceScore;
+        }
     });
     
-    // Sort by relevance and limit results
-    relevantContent.sort((a, b) => {
-        const relevanceOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-        return relevanceOrder[b.relevance] - relevanceOrder[a.relevance];
-    });
+    // Sort sentences by relevance and combine
+    relevantSentences.sort((a, b) => b.score - a.score);
+    const topSentences = relevantSentences.slice(0, 3);
     
-    return relevantContent.slice(0, 5); // Top 5 most relevant results
+    const excerpt = topSentences.map(s => s.sentence).join('. ');
+    const fullText = text.substring(0, 1000); // Keep more context for RAG
+    
+    return {
+        excerpt: excerpt || text.substring(0, 300),
+        fullText: fullText,
+        score: contextScore
+    };
 }
 
 // Extract relevant excerpt around matching words
@@ -1646,6 +1709,112 @@ function extractRelevantExcerpt(text, matchingWords) {
     
     const excerpt = text.substring(bestStart, bestStart + 300);
     return excerpt.trim() + (bestStart + 300 < text.length ? '...' : '');
+}
+
+// Synthesize intelligent answer from website content
+function synthesizeWebsiteAnswer(query, relevantContent) {
+    const queryLower = query.toLowerCase();
+    let synthesizedResponse = '';
+    
+    console.log(`[WEB-SYNTHESIS] Synthesizing answer for: "${query}"`);
+    
+    // Analyze the query type and extract key information
+    const isFoundingQuery = queryLower.includes('founded') || queryLower.includes('established') || 
+                           queryLower.includes('started') || queryLower.includes('when') && queryLower.includes('began');
+    const isMissionQuery = queryLower.includes('mission') || queryLower.includes('purpose') || queryLower.includes('objective');
+    const isServicesQuery = queryLower.includes('service') || queryLower.includes('what') && queryLower.includes('do');
+    const isAboutQuery = queryLower.includes('about') || queryLower.includes('what is');
+    
+    // Extract the most relevant information
+    const allContent = relevantContent.map(item => item.fullText || item.content).join(' ');
+    const sentences = allContent.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    
+    if (isFoundingQuery) {
+        synthesizedResponse += `<strong>COAZ Founding Information</strong><br><br>`;
+        
+        // Look for founding-related information
+        const foundingInfo = sentences.filter(s => {
+            const sLower = s.toLowerCase();
+            return sLower.includes('founded') || sLower.includes('established') || 
+                   sLower.includes('started') || sLower.includes('began') ||
+                   sLower.includes('history') || /\b(19|20)\d{2}\b/.test(s);
+        });
+        
+        if (foundingInfo.length > 0) {
+            synthesizedResponse += foundingInfo.slice(0, 2).map(s => s.trim()).join('. ');
+        } else {
+            synthesizedResponse += `Based on the information available on the COAZ website, specific founding details are referenced across multiple sections. COAZ (College of Anesthesiologists of Zambia) is the professional organization for anesthesiologists in Zambia.`;
+        }
+        
+    } else if (isMissionQuery) {
+        synthesizedResponse += `<strong>COAZ Mission & Purpose</strong><br><br>`;
+        
+        const missionInfo = sentences.filter(s => {
+            const sLower = s.toLowerCase();
+            return sLower.includes('mission') || sLower.includes('purpose') || 
+                   sLower.includes('objective') || sLower.includes('goal') ||
+                   sLower.includes('dedicated') || sLower.includes('committed');
+        });
+        
+        if (missionInfo.length > 0) {
+            synthesizedResponse += missionInfo.slice(0, 2).map(s => s.trim()).join('. ');
+        } else {
+            synthesizedResponse += `COAZ is dedicated to advancing the field of anesthesiology in Zambia through professional development, education, and maintaining high standards of patient care.`;
+        }
+        
+    } else if (isServicesQuery) {
+        synthesizedResponse += `<strong>COAZ Services & Activities</strong><br><br>`;
+        
+        const servicesInfo = sentences.filter(s => {
+            const sLower = s.toLowerCase();
+            return sLower.includes('service') || sLower.includes('offer') || 
+                   sLower.includes('provide') || sLower.includes('training') ||
+                   sLower.includes('education') || sLower.includes('program');
+        });
+        
+        if (servicesInfo.length > 0) {
+            synthesizedResponse += servicesInfo.slice(0, 3).map(s => s.trim()).join('. ');
+        } else {
+            synthesizedResponse += `COAZ provides professional services including training programs, continuing education, professional development, and advocacy for anesthesiologists in Zambia.`;
+        }
+        
+    } else if (isAboutQuery) {
+        synthesizedResponse += `<strong>About COAZ</strong><br><br>`;
+        
+        // Get the most informative sentences about COAZ
+        const aboutInfo = sentences.filter(s => {
+            const sLower = s.toLowerCase();
+            return sLower.includes('coaz') || sLower.includes('college') || 
+                   sLower.includes('anesthesiologist') || sLower.includes('organization');
+        });
+        
+        if (aboutInfo.length > 0) {
+            synthesizedResponse += aboutInfo.slice(0, 3).map(s => s.trim()).join('. ');
+        } else {
+            synthesizedResponse += `The College of Anesthesiologists of Zambia (COAZ) is the professional organization representing anesthesiologists and related medical professionals in Zambia.`;
+        }
+        
+    } else {
+        // General query - extract most relevant content
+        synthesizedResponse += `<strong>COAZ Information</strong><br><br>`;
+        
+        // Use the highest scoring content
+        const topContent = relevantContent
+            .filter(item => item.type === 'content' && (item.fullText || item.content).length > 100)
+            .slice(0, 2);
+        
+        if (topContent.length > 0) {
+            topContent.forEach(item => {
+                const content = (item.fullText || item.content).substring(0, 300);
+                synthesizedResponse += content.trim() + '. ';
+            });
+        } else {
+            synthesizedResponse += `Information about your query is available on the COAZ website. Please use the links below to explore more detailed information.`;
+        }
+    }
+    
+    console.log(`[WEB-SYNTHESIS] Generated response length: ${synthesizedResponse.length}`);
+    return synthesizedResponse;
 }
 
 // Determine if query needs constitution context OR web scraping (UPDATED VERSION)
@@ -1784,71 +1953,48 @@ app.post("/api/chat", async (req, res) => {
             const websiteData = websiteContext.data;
             
             if (websiteContext.type === 'content') {
-                // Generate response with actual content, not just page lists
-                let contentResponse = ``;
+                console.log(`[WEB] Processing ${websiteContext.relevantContent.length} relevant content pieces`);
                 
-                // Extract and compile the actual information
-                const contentPieces = [];
-                const headings = [];
+                // Use RAG-style processing on website content
+                const websiteContentForRAG = websiteContext.relevantContent
+                    .map(item => item.fullText || item.content)
+                    .join('\n\n');
+                
+                console.log(`[WEB] Combined content length: ${websiteContentForRAG.length} characters`);
+                
+                // Try to generate intelligent answer using the scraped content
+                let intelligentResponse;
+                try {
+                    // Use the offline response generator with the website content as context
+                    intelligentResponse = generateOfflineResponse(query, websiteContentForRAG);
+                } catch (error) {
+                    console.log(`[WEB] Offline response failed, using content synthesis`);
+                    intelligentResponse = synthesizeWebsiteAnswer(query, websiteContext.relevantContent);
+                }
+                
+                // Add Learn More section
                 const uniqueSources = [...new Set(websiteContext.relevantContent.map(item => item.source))];
-                
-                websiteContext.relevantContent.forEach((item) => {
-                    if (item.type === 'content' && item.content.length > 50) {
-                        // Clean up the content and make it more readable
-                        let cleanContent = item.content
-                            .replace(/\s+/g, ' ')
-                            .trim();
-                        
-                        // Only include substantial content pieces
-                        if (cleanContent.length > 100) {
-                            contentPieces.push(cleanContent);
-                        }
-                    } else if (item.type === 'heading' && !headings.includes(item.content)) {
-                        headings.push(item.content);
-                    }
-                });
-                
-                // Start with relevant headings if found
-                if (headings.length > 0) {
-                    contentResponse += `<strong>${headings[0]}</strong><br><br>`;
-                }
-                
-                // Add the most relevant content pieces
-                if (contentPieces.length > 0) {
-                    const topContent = contentPieces.slice(0, 2); // Top 2 most relevant pieces
-                    topContent.forEach((content, index) => {
-                        contentResponse += content;
-                        if (index < topContent.length - 1) {
-                            contentResponse += `<br><br>`;
-                        }
-                    });
-                } else {
-                    // Fallback if no substantial content found
-                    contentResponse = `I found information related to your query on the COAZ website, but the specific details may require visiting the source pages for complete information.`;
-                }
-                
-                // Add Learn More button at the bottom
-                contentResponse += `<br><br>`;
+                intelligentResponse += `<br><br>`;
                 
                 if (uniqueSources.length === 1) {
-                    contentResponse += `<a href="${uniqueSources[0]}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 8px;">📖 Learn More</a>`;
+                    intelligentResponse += `<a href="${uniqueSources[0]}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 8px;">📖 Learn More</a>`;
                 } else if (uniqueSources.length > 1) {
-                    contentResponse += `<strong>📖 Learn More:</strong><br>`;
+                    intelligentResponse += `<strong>📖 Learn More:</strong><br>`;
                     uniqueSources.slice(0, 3).forEach((source, index) => {
                         const pageTitle = source.split('/').pop().replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'COAZ Page';
-                        contentResponse += `<a href="${source}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; margin: 2px 4px 2px 0;">${pageTitle}</a>`;
+                        intelligentResponse += `<a href="${source}" target="_blank" style="display: inline-block; background-color: rgb(0,175,240); color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; margin: 2px 4px 2px 0;">${pageTitle}</a>`;
                         if (index === 2 && uniqueSources.length > 3) {
-                            contentResponse += `<span style="font-size: 0.9em; color: #666;">... and ${uniqueSources.length - 3} more pages</span>`;
+                            intelligentResponse += `<span style="font-size: 0.9em; color: #666;">... and ${uniqueSources.length - 3} more pages</span>`;
                         }
                     });
                 }
                 
-                contentResponse += `<br><br><em style="font-size: 0.85em; color: #666;">Information sourced from COAZ website • Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                intelligentResponse += `<br><br><em style="font-size: 0.85em; color: #666;">Information synthesized from COAZ website content • Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
                 
                 return res.json({
                     sender: "bot",
-                    text: contentResponse,
-                    responseType: "website_content_answer"
+                    text: intelligentResponse,
+                    responseType: "website_content_synthesized"
                 });
             } else if (websiteContext.type === 'contact') {
                 let contactResponse = `<strong>COAZ Contact Information</strong><br><br>`;
