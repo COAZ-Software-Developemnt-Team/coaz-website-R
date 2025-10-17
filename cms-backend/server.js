@@ -15,6 +15,8 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { body, validationResult } = require('express-validator');
 const RAGSystem = require('./rag-system');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 
@@ -26,6 +28,16 @@ const config = {
     ai: {
         provider: process.env.AI_PROVIDER || 'huggingface', // 'openai', 'huggingface', or 'offline'
         fallbackToOffline: process.env.AI_FALLBACK_OFFLINE !== 'false'
+    },
+    offlineResponse: {
+        enabled: process.env.OFFLINE_RESPONSE_ENABLED !== 'false', // Default: enabled
+        fallbackOnly: process.env.OFFLINE_RESPONSE_FALLBACK_ONLY === 'true', // Default: false (use for all patterns)
+        forceSimpleAnswers: process.env.OFFLINE_FORCE_SIMPLE_ANSWERS === 'true' // Default: false
+    },
+    webScraping: {
+        enabled: process.env.WEB_SCRAPING_ENABLED !== 'false', // Default: enabled
+        coazWebsite: process.env.COAZ_WEBSITE_URL || 'https://coaz.org',
+        cacheTimeout: parseInt(process.env.WEB_CACHE_TIMEOUT) || 3600000 // 1 hour default
     },
     openai: {
         apiKey: process.env.OPENAI_API_KEY || '',
@@ -173,6 +185,15 @@ let fuse;
 let constitutionSections = [];
 let constitutionFullText = '';
 let ragSystem;
+let websiteCache = {
+    data: null,
+    lastUpdated: null,
+    isLoading: false
+};
+
+// Clear cache on startup for testing
+websiteCache.data = null;
+websiteCache.lastUpdated = null;
 
 // Enhanced session management
 class SessionManager {
@@ -404,6 +425,41 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
     // Intelligent AI responses for general conversation (when HF models aren't available)
     const queryLower = query.toLowerCase().trim();
     
+    // Simple factual questions first
+    if (queryLower.includes('coaz') && queryLower.includes('zambia') && (queryLower.includes('is') || queryLower.includes('in'))) {
+        return `Yes, COAZ (College of Anesthesiologists of Zambia) is indeed in Zambia. It's the professional medical organization for anesthesiologists in the country.`;
+    }
+
+    if (queryLower.includes('where') && queryLower.includes('coaz')) {
+        return `COAZ is located in Zambia. It's the College of Anesthesiologists of Zambia, serving anesthesiology professionals throughout the country.`;
+    }
+
+    if (queryLower.includes('country') && queryLower.includes('coaz')) {
+        return `COAZ operates in Zambia. It stands for College of Anesthesiologists of Zambia.`;
+    }
+
+    // Simple yes/no questions
+    if ((queryLower.includes('does') || queryLower.includes('is')) && queryLower.includes('coaz') && queryLower.includes('exist')) {
+        return `Yes, COAZ exists. It's the College of Anesthesiologists of Zambia, the professional organization for anesthesiologists in the country.`;
+    }
+
+    if (queryLower.includes('what does coaz stand for') || queryLower.includes('coaz stands for')) {
+        return `COAZ stands for "College of Anesthesiologists of Zambia".`;
+    }
+
+    if (queryLower.includes('full form') && queryLower.includes('coaz')) {
+        return `The full form of COAZ is "College of Anesthesiologists of Zambia".`;
+    }
+
+    // Short answers for common questions
+    if (queryLower.includes('when') && queryLower.includes('founded') && queryLower.includes('coaz')) {
+        return `COAZ was established to serve anesthesiologists in Zambia. For the exact founding date, please refer to the constitution or contact COAZ directly.`;
+    }
+
+    if (queryLower.includes('head office') || queryLower.includes('headquarters')) {
+        return `COAZ is headquartered in Zambia. For the exact address and contact details, please contact COAZ directly.`;
+    }
+
     // Pattern-based intelligent responses that feel more like AI
     if (queryLower === 'hi' || queryLower === 'hello' || queryLower === 'hey' || queryLower.startsWith('hi ') || queryLower.startsWith('hello ') || queryLower.startsWith('hey ')) {
         return ` Hello! I'm your COAZ AI assistant. I'm here to help you with information about the College of Anesthesiologists of Zambia. What would you like to know?`;
@@ -436,6 +492,13 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
     // Skip HF text generation as it's unreliable - go straight to intelligent response
     console.log('Skipping HF text generation, using intelligent response...');
     
+    // Try to extract basic information from constitution for simple queries
+    if (constitutionContext && queryLower.length < 50) {
+        // For short queries with constitution context, give a brief answer
+        const contextSnippet = constitutionContext.substring(0, 200) + "...";
+        return `Based on the COAZ constitution: ${contextSnippet}<br><br>Need more details? Feel free to ask a more specific question!`;
+    }
+
     // Smart fallback for general queries
     return `I understand you're asking about "<strong>${query}</strong>". While I specialize in COAZ-related information, I'm here to help!<br><br>Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:<br><br>• COAZ membership and requirements<br>• Anesthesiology profession in Zambia<br>• College constitution and governance<br>• Professional development opportunities<br>• Medical education and training<br><br>What specific aspect would you like to explore?`;
 }
@@ -448,6 +511,15 @@ function generateOfflineResponse(query, constitutionContext) {
         return `[CONSTITUTION] COAZ Constitution Information\n\n${constitutionContext}\n\n[TIP] This information was found in the COAZ constitution document. For more specific details, feel free to ask follow-up questions!`;
     }
     
+    // Simple membership questions
+    if (queryLower.includes('membership') && (queryLower.includes('cost') || queryLower.includes('fee') || queryLower.includes('price'))) {
+        return `COAZ membership fees vary by category. Contact COAZ directly for current fee structure and payment options.`;
+    }
+
+    if (queryLower.includes('join') && queryLower.includes('coaz') && queryLower.length < 30) {
+        return `To join COAZ, you need a medical degree, anesthesiology training, and valid Zambian medical registration. Apply through the COAZ membership committee.`;
+    }
+
     // Enhanced pattern matching for common queries
     if (queryLower.includes('membership') || queryLower.includes('member') || queryLower.includes('join') || queryLower.includes('become')) {
         return `<strong>COAZ Membership Information</strong><br><br>The College of Anesthesiologists of Zambia (COAZ) offers membership to qualified medical professionals who are committed to excellence in anesthesiology.<br><br><strong>Membership Categories:</strong><br>• <strong>Full Members</strong>: Certified anesthesiologists with complete training<br>• <strong>Associate Members</strong>: Medical officers with anesthesia experience<br>• <strong>Student Members</strong>: Medical students interested in anesthesiology<br>• <strong>Honorary Members</strong>: Distinguished contributors to the field<br><br><strong>Typical Requirements:</strong><br>• Valid medical degree from recognized institution<br>• Completed anesthesiology training/specialization<br>• Current medical registration in Zambia<br>• Professional references and good standing<br>• Commitment to continuing professional development<br><br><strong>Membership Benefits:</strong><br>• Professional recognition and certification<br>• Access to continuing education programs<br>• Networking with anesthesiology professionals<br>• Career development opportunities<br>• Updates on best practices and guidelines<br><br><strong>Next Steps:</strong><br>• Contact COAZ directly for application forms<br>• Speak with current members for guidance<br>• Prepare required documentation<br><br><em>This information is based on typical professional medical college requirements. For exact details, please contact COAZ directly.</em>`;
@@ -786,7 +858,538 @@ Constitution Context (if available): ${constitutionContext || 'No specific const
     }
 }
 
-// Determine if query needs constitution context
+// Comprehensive website crawler and indexer
+async function scrapeCoazWebsite() {
+    if (!config.webScraping.enabled) {
+        console.log('[WEB] Web scraping disabled');
+        return null;
+    }
+
+    // Check cache first
+    const now = Date.now();
+    if (websiteCache.data && websiteCache.lastUpdated && 
+        (now - websiteCache.lastUpdated) < config.webScraping.cacheTimeout) {
+        console.log('[WEB] Using cached website data');
+        return websiteCache.data;
+    }
+
+    if (websiteCache.isLoading) {
+        console.log('[WEB] Already loading website data');
+        return websiteCache.data;
+    }
+
+    try {
+        websiteCache.isLoading = true;
+        console.log(`[WEB] Starting comprehensive website crawl: ${config.webScraping.coazWebsite}`);
+        
+        // For now, let's start with just the main page to debug contact extraction
+        // Then we'll expand to full site crawling once it's working
+        console.log(`[WEB] DEBUG MODE: Scraping main page only first`);
+        const mainPageData = await scrapeSinglePage(config.webScraping.coazWebsite);
+        
+        if (!mainPageData) {
+            console.log(`[WEB] Failed to scrape main page, skipping crawler`);
+            return null;
+        }
+        
+        // For testing, let's see what we got from the main page
+        console.log(`[WEB] Main page extraction results:`);
+        console.log(`[WEB] - Phones found: ${mainPageData.contact.phones.length}`);
+        console.log(`[WEB] - Emails found: ${mainPageData.contact.emails.length}`);
+        console.log(`[WEB] - Addresses found: ${mainPageData.contact.addresses.length}`);
+        
+        // Create a simple consolidated structure for now
+        const websiteData = {
+            totalPages: 1,
+            contact: mainPageData.contact,
+            content: {
+                about: mainPageData.content.map(c => c.text).join(' ').substring(0, 1000),
+                allText: mainPageData.content.map(c => c.text).join(' ')
+            },
+            pages: [mainPageData],
+            lastIndexed: Date.now()
+        };
+        
+        console.log(`[WEB] Successfully crawled and indexed 1 page (debug mode)`);
+        
+        // Cache the comprehensive data
+        websiteCache.data = websiteData;
+        websiteCache.lastUpdated = now;
+        
+        return websiteData;
+
+    } catch (error) {
+        console.error(`[WEB] Error during website crawl: ${error.message}`);
+        return null;
+    } finally {
+        websiteCache.isLoading = false;
+    }
+}
+
+// Discover all pages on the website
+async function discoverWebsitePages(baseUrl) {
+    const discovered = new Set();
+    const toVisit = [baseUrl];
+    const maxPages = 20; // Limit to prevent infinite crawling
+    
+    try {
+        while (toVisit.length > 0 && discovered.size < maxPages) {
+            const currentUrl = toVisit.shift();
+            if (discovered.has(currentUrl)) continue;
+            
+            discovered.add(currentUrl);
+            console.log(`[WEB] Discovering links on: ${currentUrl}`);
+            
+            const response = await axios.get(currentUrl, {
+                timeout: 10000,
+                headers: {
+                    'User-Agent': 'COAZ-Chatbot/1.0 (Website Crawler)'
+                }
+            });
+
+            const $ = cheerio.load(response.data);
+            
+            // Find all internal links
+            $('a[href]').each((index, element) => {
+                let href = $(element).attr('href');
+                if (!href) return;
+                
+                // Convert relative URLs to absolute
+                if (href.startsWith('/')) {
+                    href = new URL(href, baseUrl).href;
+                } else if (href.startsWith('./')) {
+                    href = new URL(href.substring(2), currentUrl).href;
+                } else if (!href.startsWith('http')) {
+                    href = new URL(href, currentUrl).href;
+                }
+                
+                // Only include same-domain links
+                if (href.startsWith(baseUrl) && !discovered.has(href) && !href.includes('#')) {
+                    toVisit.push(href);
+                }
+            });
+        }
+        
+        return Array.from(discovered);
+        
+    } catch (error) {
+        console.error(`[WEB] Error discovering pages: ${error.message}`);
+        return [baseUrl]; // Fallback to just the main page
+    }
+}
+
+// Scrape multiple pages concurrently
+async function scrapeMultiplePages(urls) {
+    const maxConcurrent = 3; // Limit concurrent requests
+    const allPageData = [];
+    
+    for (let i = 0; i < urls.length; i += maxConcurrent) {
+        const batch = urls.slice(i, i + maxConcurrent);
+        const batchPromises = batch.map(url => scrapeSinglePage(url));
+        
+        try {
+            const batchResults = await Promise.allSettled(batchPromises);
+            batchResults.forEach((result, index) => {
+                if (result.status === 'fulfilled' && result.value) {
+                    allPageData.push(result.value);
+                } else {
+                    console.error(`[WEB] Failed to scrape: ${batch[index]}`);
+                }
+            });
+        } catch (error) {
+            console.error(`[WEB] Batch scraping error: ${error.message}`);
+        }
+        
+        // Small delay between batches to be respectful
+        if (i + maxConcurrent < urls.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    
+    return allPageData;
+}
+
+// Scrape a single page comprehensively
+async function scrapeSinglePage(url) {
+    try {
+        console.log(`[WEB] Scraping page: ${url}`);
+        
+        const response = await axios.get(url, {
+            timeout: 15000,
+            headers: {
+                'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive Scraper)'
+            }
+        });
+
+        const $ = cheerio.load(response.data);
+        
+        // Extract comprehensive page data
+        const pageData = {
+            url: url,
+            title: $('title').text() || '',
+            description: $('meta[name="description"]').attr('content') || '',
+            headings: [],
+            content: [],
+            contact: {
+                addresses: [],
+                phones: [],
+                emails: [],
+                socialMedia: []
+            },
+            navigation: [],
+            lastScraped: Date.now()
+        };
+
+        // Extract all headings with hierarchy
+        $('h1, h2, h3, h4, h5, h6').each((index, element) => {
+            const $el = $(element);
+            pageData.headings.push({
+                level: element.tagName.toLowerCase(),
+                text: $el.text().trim(),
+                id: $el.attr('id') || null
+            });
+        });
+
+        // Extract all meaningful content sections
+        $('main, article, section, div.content, .container, .main-content').each((index, element) => {
+            const $el = $(element);
+            const text = $el.text().trim();
+            if (text.length > 50) { // Only include substantial content
+                pageData.content.push({
+                    selector: $el.get(0).tagName.toLowerCase() + ($el.attr('class') ? '.' + $el.attr('class').split(' ')[0] : ''),
+                    text: text.substring(0, 1000) // Limit length
+                });
+            }
+        });
+
+        // Extract navigation links
+        $('nav a, .menu a, .navigation a').each((index, element) => {
+            const $el = $(element);
+            const href = $el.attr('href');
+            const text = $el.text().trim();
+            if (href && text) {
+                pageData.navigation.push({ text, href });
+            }
+        });
+
+        // Extract contact information comprehensively
+        const pageText = response.data;
+        
+        // Extract all phone numbers with more aggressive patterns
+        const phonePatterns = [
+            /(\+260[\d\s\-()]{9,15})/g,                    // Zambian international format
+            /(\d{10,})/g,                                  // Long number sequences
+            /((?:\+|00)\d{1,3}[\s\-]?\d{6,14})/g,         // International format
+            /(\d{3}[\s\-]?\d{3}[\s\-]?\d{4})/g,           // Local format
+            /(260[\d\s\-()]{9,})/g,                       // 260 prefix
+            /([+]?[\d\s\-()]{10,15})/g                    // Any long digit sequence
+        ];
+        
+        console.log(`[WEB] Searching for phone numbers in ${pageText.length} characters`);
+        
+        phonePatterns.forEach((pattern, index) => {
+            const matches = [...pageText.matchAll(pattern)];
+            console.log(`[WEB] Pattern ${index + 1} found ${matches.length} potential matches`);
+            matches.forEach(match => {
+                const phone = match[1].trim().replace(/\s+/g, ' '); // Normalize spaces
+                // Filter out obviously non-phone numbers
+                if (phone.length >= 9 && phone.length <= 20 && !pageData.contact.phones.includes(phone)) {
+                    pageData.contact.phones.push(phone);
+                    console.log(`[WEB] ✅ Found phone on ${url}: ${phone}`);
+                }
+            });
+        });
+
+        // Extract all email addresses with enhanced patterns
+        const emailPatterns = [
+            /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,     // Standard email
+            /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})/g,   // Extended TLD
+            /(?:email|mail|contact)[\s:]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi // With prefixes
+        ];
+        
+        console.log(`[WEB] Searching for email addresses...`);
+        
+        emailPatterns.forEach((pattern, index) => {
+            const matches = [...pageText.matchAll(pattern)];
+            console.log(`[WEB] Email pattern ${index + 1} found ${matches.length} potential matches`);
+            matches.forEach(match => {
+                const email = match[1] ? match[1].trim() : match[0].trim();
+                // Clean up any prefixes
+                const cleanEmail = email.replace(/^(?:email|mail|contact)[\s:]*/, '');
+                if (cleanEmail.includes('@') && !pageData.contact.emails.includes(cleanEmail)) {
+                    pageData.contact.emails.push(cleanEmail);
+                    console.log(`[WEB] ✅ Found email on ${url}: ${cleanEmail}`);
+                }
+            });
+        });
+
+        // Extract addresses
+        const addressPatterns = [
+            /address[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe|street|road|avenue)[^.]*)/gi,
+            /located[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe)[^.]*)/gi,
+            /office[:\s]*([^.]+(?:zambia|lusaka|ndola|kitwe)[^.]*)/gi
+        ];
+
+        addressPatterns.forEach(pattern => {
+            const matches = [...pageText.matchAll(pattern)];
+            matches.forEach(match => {
+                const address = match[1].trim().substring(0, 200);
+                if (address && !pageData.contact.addresses.includes(address)) {
+                    pageData.contact.addresses.push(address);
+                    console.log(`[WEB] Found address on ${url}: ${address.substring(0, 50)}...`);
+                }
+            });
+        });
+
+        return pageData;
+
+    } catch (error) {
+        console.error(`[WEB] Error scraping ${url}: ${error.message}`);
+        return null;
+    }
+}
+
+// Index and consolidate content from all pages
+function indexWebsiteContent(allPageData) {
+    const consolidatedData = {
+        totalPages: allPageData.length,
+        contact: {
+            phones: [],
+            emails: [],
+            addresses: [],
+            socialMedia: []
+        },
+        content: {
+            about: '',
+            services: [],
+            navigation: [],
+            allText: '',
+            headings: []
+        },
+        pages: allPageData,
+        lastIndexed: Date.now()
+    };
+
+    // Consolidate all contact information
+    allPageData.forEach(page => {
+        if (page.contact) {
+            consolidatedData.contact.phones.push(...page.contact.phones);
+            consolidatedData.contact.emails.push(...page.contact.emails);
+            consolidatedData.contact.addresses.push(...page.contact.addresses);
+        }
+        
+        // Collect all headings
+        if (page.headings) {
+            consolidatedData.content.headings.push(...page.headings);
+        }
+        
+        // Collect all navigation
+        if (page.navigation) {
+            consolidatedData.content.navigation.push(...page.navigation);
+        }
+        
+        // Collect all content text
+        if (page.content) {
+            page.content.forEach(section => {
+                consolidatedData.content.allText += section.text + ' ';
+            });
+        }
+    });
+
+    // Remove duplicates
+    consolidatedData.contact.phones = [...new Set(consolidatedData.contact.phones)];
+    consolidatedData.contact.emails = [...new Set(consolidatedData.contact.emails)];
+    consolidatedData.contact.addresses = [...new Set(consolidatedData.contact.addresses)];
+
+    // Create searchable about section from all content
+    consolidatedData.content.about = consolidatedData.content.allText.substring(0, 2000);
+
+    console.log(`[WEB] Indexed content: ${consolidatedData.contact.phones.length} phones, ${consolidatedData.contact.emails.length} emails, ${consolidatedData.contact.addresses.length} addresses`);
+
+    return consolidatedData;
+}
+
+// Intelligent query understanding and rephrasing
+function enhanceQueryUnderstanding(query) {
+    const queryLower = query.toLowerCase().trim();
+    
+    // Contact/Phone number patterns
+    const phonePatterns = [
+        /give me.*number/,
+        /what.*number/,
+        /their number/,
+        /your number/,
+        /phone.*number/,
+        /contact.*number/,
+        /call.*number/,
+        /telephone/
+    ];
+    
+    // Address/Location patterns
+    const addressPatterns = [
+        /where.*they/,
+        /their.*location/,
+        /their.*address/,
+        /where.*located/,
+        /find.*them/,
+        /visit.*them/,
+        /go.*there/
+    ];
+    
+    // Email patterns
+    const emailPatterns = [
+        /email.*address/,
+        /send.*email/,
+        /contact.*email/,
+        /their.*email/
+    ];
+    
+    // Website patterns
+    const websitePatterns = [
+        /their.*website/,
+        /visit.*website/,
+        /web.*site/,
+        /online.*presence/
+    ];
+    
+    // Membership patterns
+    const membershipPatterns = [
+        /how.*join/,
+        /become.*member/,
+        /join.*them/,
+        /sign.*up/,
+        /apply.*membership/,
+        /membership.*process/
+    ];
+    
+    // Information patterns
+    const infoPatterns = [
+        /tell me about.*them/,
+        /what.*they.*do/,
+        /about.*organization/,
+        /what.*coaz/,
+        /who.*they/
+    ];
+    
+    // Contact patterns (general)
+    const contactPatterns = [
+        /how.*contact.*them/,
+        /contact.*them/,
+        /reach.*them/,
+        /get.*touch/,
+        /speak.*them/
+    ];
+    
+    // Apply enhancements based on patterns
+    if (phonePatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ phone number contact information";
+    }
+    
+    if (addressPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ office address location";
+    }
+    
+    if (emailPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ email contact information";
+    }
+    
+    if (websitePatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ website information";
+    }
+    
+    if (membershipPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ membership requirements how to join";
+    }
+    
+    if (infoPatterns.some(pattern => pattern.test(queryLower))) {
+        return "what is COAZ about organization information";
+    }
+    
+    if (contactPatterns.some(pattern => pattern.test(queryLower))) {
+        return "COAZ contact information phone email address";
+    }
+    
+    // If no patterns match, return original query
+    return query;
+}
+
+// Generate alternative query variations for retry attempts
+function generateAlternativeQueries(originalQuery) {
+    const queryLower = originalQuery.toLowerCase();
+    const alternatives = [];
+    
+    // For phone number requests
+    if (queryLower.includes('number') || queryLower.includes('call') || queryLower.includes('phone')) {
+        alternatives.push('COAZ phone number');
+        alternatives.push('COAZ contact phone');
+        alternatives.push('COAZ telephone number');
+        alternatives.push('contact COAZ phone');
+    }
+    
+    // For location requests
+    if (queryLower.includes('where') || queryLower.includes('location') || queryLower.includes('address')) {
+        alternatives.push('COAZ office address');
+        alternatives.push('COAZ location');
+        alternatives.push('where is COAZ office');
+        alternatives.push('COAZ headquarters address');
+    }
+    
+    // For email requests
+    if (queryLower.includes('email') || queryLower.includes('contact')) {
+        alternatives.push('COAZ email address');
+        alternatives.push('COAZ contact email');
+        alternatives.push('contact COAZ email');
+    }
+    
+    // For general contact requests
+    if (queryLower.includes('contact') || queryLower.includes('reach')) {
+        alternatives.push('COAZ contact information');
+        alternatives.push('COAZ contact details');
+        alternatives.push('how to contact COAZ');
+    }
+    
+    // Always add a general fallback
+    alternatives.push('COAZ contact information');
+    
+    return alternatives;
+}
+
+// Enhanced query processing with website data
+async function getWebsiteContext(query) {
+    const queryLower = query.toLowerCase();
+    
+    // Check if query is asking for location/contact info
+    // Enhanced patterns to catch more location queries
+    const locationPatterns = [
+        /where.*(?:are you|is coaz|located|office|headquarter)/,
+        /(?:coaz|you).*(?:location|address|office|contact)/,
+        /location.*(?:coaz|office)/,
+        /address.*(?:coaz|office)/,
+        /contact.*(?:coaz|information)/,
+        /office.*(?:coaz|address)/,
+        /headquarter/,
+        /where.*you.*located/,
+        /where.*located/
+    ];
+    
+    const isLocationQuery = locationPatterns.some(pattern => pattern.test(queryLower));
+    
+    if (isLocationQuery) {
+        
+        const websiteData = await scrapeCoazWebsite();
+        if (websiteData) {
+            return {
+                hasContext: true,
+                type: 'contact',
+                data: websiteData
+            };
+        }
+    }
+
+    return { hasContext: false };
+}
+
+// Determine if query needs constitution context OR web scraping
 function needsConstitutionContext(query) {
     const constitutionKeywords = [
         'constitution', 'article', 'section', 'rule', 'regulation', 'membership', 'member',
@@ -798,7 +1401,10 @@ function needsConstitutionContext(query) {
         'procedure', 'standard', 'guideline', 'policy', 'officer', 'become',
         'president', 'secretary', 'treasurer', 'executive', 'council', 'fee', 'fees',
         'benefit', 'benefits', 'training', 'education', 'cpd', 'what is coaz',
-        'about coaz', 'tell me about', 'explain', 'describe coaz'
+        'about coaz', 'tell me about', 'explain', 'describe coaz',
+        // Contact-related keywords that should trigger processing
+        'phone', 'number', 'email', 'contact', 'address', 'location', 'office',
+        'call', 'reach', 'their', 'them', 'where', 'how to contact'
     ];
 
     const queryLower = query.toLowerCase().trim();
@@ -815,6 +1421,25 @@ function needsConstitutionContext(query) {
     // If it's EXACTLY a general greeting/phrase, skip constitution
     if (generalPhrases.some(phrase => queryLower === phrase)) {
         return false;
+    }
+
+    // Check for contact-related patterns that should be processed
+    const contactPatterns = [
+        /give me.*number/,
+        /their.*number/,
+        /what.*number/,
+        /phone.*number/,
+        /email.*address/,
+        /where.*they/,
+        /where.*located/,
+        /contact.*them/,
+        /reach.*them/,
+        /their.*email/
+    ];
+    
+    if (contactPatterns.some(pattern => pattern.test(queryLower))) {
+        console.log(`[CLASSIFICATION] Contact pattern detected in: "${query}"`);
+        return true;
     }
 
     // Check for multi-word phrases first (more specific matches)
@@ -884,8 +1509,96 @@ app.post("/api/chat", async (req, res) => {
         
         console.log(`[DEBUG] Query: "${query}" | UseRag: ${useRag} | NeedsConstitution: ${needsConstitutionContext(query)} | ShouldUseRag: ${shouldUseRag}`);
 
+        // INTELLIGENT QUERY UNDERSTANDING - Rephrase ambiguous queries
+        console.log('[INTELLIGENT] Analyzing and rephrasing query if needed...');
+        const originalQuery = query;
+        const enhancedQuery = enhanceQueryUnderstanding(query);
+        
+        console.log(`[INTELLIGENT] Original: "${originalQuery}"`);
+        console.log(`[INTELLIGENT] Enhanced: "${enhancedQuery}"`);
+        console.log(`[INTELLIGENT] Changed: ${enhancedQuery !== originalQuery}`);
+        
+        if (enhancedQuery !== originalQuery) {
+            console.log(`[INTELLIGENT] ✅ Rephrased: "${originalQuery}" → "${enhancedQuery}"`);
+            query = enhancedQuery; // Use enhanced query for processing
+        } else {
+            console.log(`[INTELLIGENT] ❌ No rephrasing needed for: "${originalQuery}"`);
+        }
+
+        // PRIORITY 1: Web Scraping - Check for website context first (location/contact queries)
+        console.log('[PRIORITY] Checking web scraping context...');
+        let websiteContext = await getWebsiteContext(query);
+        
+        // If web scraping fails and original query was rephrased, try with more specific patterns
+        if (!websiteContext.hasContext && enhancedQuery !== originalQuery) {
+            console.log('[PRIORITY] Web scraping failed, trying alternative patterns...');
+            const alternativeQueries = generateAlternativeQueries(originalQuery);
+            for (const altQuery of alternativeQueries) {
+                console.log(`[PRIORITY] Trying alternative: "${altQuery}"`);
+                websiteContext = await getWebsiteContext(altQuery);
+                if (websiteContext.hasContext) {
+                    console.log(`[PRIORITY] Success with alternative query!`);
+                    break;
+                }
+            }
+        }
+        
+        if (websiteContext.hasContext) {
+            console.log('[WEB] Using website context for response');
+            const websiteData = websiteContext.data;
+            
+            if (websiteContext.type === 'contact') {
+                let contactResponse = `<strong>COAZ Contact Information</strong><br><br>`;
+                contactResponse += `<em>Information sourced from comprehensive scan of ${websiteData.totalPages} pages on the COAZ website:</em><br><br>`;
+                
+                // Display all found phone numbers
+                if (websiteData.contact.phones && websiteData.contact.phones.length > 0) {
+                    contactResponse += `<strong>📞 Phone Numbers:</strong><br>`;
+                    websiteData.contact.phones.forEach(phone => {
+                        contactResponse += `• ${phone}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                } else {
+                    contactResponse += `<strong>📞 Phone:</strong><br>Contact information available on website<br><br>`;
+                }
+                
+                // Display all found email addresses
+                if (websiteData.contact.emails && websiteData.contact.emails.length > 0) {
+                    contactResponse += `<strong>📧 Email Addresses:</strong><br>`;
+                    websiteData.contact.emails.forEach(email => {
+                        contactResponse += `• ${email}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                }
+                
+                // Display all found addresses
+                if (websiteData.contact.addresses && websiteData.contact.addresses.length > 0) {
+                    contactResponse += `<strong>📍 Addresses:</strong><br>`;
+                    websiteData.contact.addresses.forEach(address => {
+                        contactResponse += `• ${address}<br>`;
+                    });
+                    contactResponse += `<br>`;
+                } else {
+                    contactResponse += `<strong>📍 Location:</strong><br>COAZ is located in Zambia.<br><br>`;
+                }
+                
+                contactResponse += `<strong>🌐 Website:</strong><br><a href="${config.webScraping.coazWebsite}" target="_blank">${config.webScraping.coazWebsite}</a><br><br>`;
+                contactResponse += `<em>Last updated: ${new Date(websiteData.lastIndexed).toLocaleString()}</em>`;
+                
+                return res.json({
+                    sender: "bot",
+                    text: contactResponse,
+                    responseType: "website_contact_comprehensive"
+                });
+            }
+        }
+
+        // PRIORITY 2: Document Search (RAG/Constitution)
+        console.log('[PRIORITY] Checking document context...');
+        const queryLower = query.toLowerCase().trim();
+
         if (shouldUseRag) {
-            console.log("[RAG] Using RAG system for constitution query...");
+            console.log("[DOCUMENT] Using RAG system for constitution query...");
 
             try {
                 ragResponse = await ragSystem.processQuery(query);
@@ -894,41 +1607,112 @@ app.post("/api/chat", async (req, res) => {
                 if (ragResponse.confidence > 0.1 && ragResponse.hasRelevantContext) {
                     response = formatRAGResponse(ragResponse);
                     responseType = "rag_qa";
-                    console.log(`[RAG] Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
+                    console.log(`[DOCUMENT] RAG Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
+                    
+                    return res.json({
+                        sender: "bot",
+                        text: response,
+                        responseType: responseType
+                    });
                 } else {
-                    // RAG found context but low confidence - use offline response directly
-                    console.log("[RAG] Low confidence, using enhanced offline response");
-                    const constitutionContext = ragResponse.metadata?.retrievedContext || null;
-                    response = generateOfflineResponse(query, constitutionContext);
-                    responseType = "offline_enhanced";
+                    console.log(`[DOCUMENT] RAG Low confidence (${ragResponse.confidence.toFixed(2)}), proceeding to next priority...`);
                 }
             } catch (ragError) {
-                console.error("[RAG] System error:", ragError.message);
-                // Continue with traditional approach on RAG error
+                console.error("[DOCUMENT] RAG System error:", ragError.message);
             }
         }
 
-        // If RAG wasn't used or failed, use traditional approach
-        if (!response) {
-            let constitutionContext = null;
+        // Constitution search as document fallback with retry logic
+        if (needsConstitutionContext(query)) {
+            console.log("[DOCUMENT] Searching constitution for context...");
+            let searchResults = searchConstitution(query);
 
-            // Only search constitution if it's constitution-related but RAG wasn't used
-            if (needsConstitutionContext(query)) {
-                console.log("[SEARCH] Searching constitution for context...");
-                const searchResults = searchConstitution(query);
-
-                if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
-                    constitutionContext = searchResults.slice(0, 2).join("\n\n"); // Limit to 2 results
+            // If no results and query was enhanced, try alternatives
+            if ((searchResults.length === 0 || searchResults[0].startsWith("[ERROR]")) && enhancedQuery !== originalQuery) {
+                console.log("[DOCUMENT] First search failed, trying alternative patterns...");
+                const alternativeQueries = generateAlternativeQueries(originalQuery);
+                for (const altQuery of alternativeQueries) {
+                    console.log(`[DOCUMENT] Trying alternative: "${altQuery}"`);
+                    searchResults = searchConstitution(altQuery);
+                    if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
+                        console.log(`[DOCUMENT] Success with alternative query!`);
+                        break;
+                    }
                 }
+            }
+
+            if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
+                const constitutionContext = searchResults.slice(0, 2).join("\n\n");
                 
-                // For constitution queries, use enhanced offline response directly
-                console.log("Using enhanced offline response for constitution query...");
-                response = generateOfflineResponse(query, constitutionContext);
-                responseType = "offline_enhanced";
-            } else {
-                console.log("Generating AI response for general query...");
+                if (config.offlineResponse.enabled) {
+                    console.log("[DOCUMENT] Using enhanced offline response with constitution context");
+                    response = generateOfflineResponse(query, constitutionContext);
+                    responseType = "offline_enhanced";
+                    
+                    return res.json({
+                        sender: "bot",
+                        text: response,
+                        responseType: responseType
+                    });
+                }
+            }
+        }
+
+        // PRIORITY 3: Simple Factual Responses
+        console.log('[PRIORITY] Checking simple factual patterns...');
+        
+        // Simple factual questions that need immediate short answers
+        if (queryLower.includes('coaz') && queryLower.includes('zambia') && (queryLower.includes('is') || queryLower.includes('in'))) {
+            return res.json({
+                sender: "bot",
+                text: `Yes, COAZ (College of Anesthesiologists of Zambia) is indeed in Zambia. It's the professional medical organization for anesthesiologists in the country.`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('what does coaz stand for') || queryLower.includes('coaz stands for')) {
+            return res.json({
+                sender: "bot",
+                text: `COAZ stands for "College of Anesthesiologists of Zambia".`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('full form') && queryLower.includes('coaz')) {
+            return res.json({
+                sender: "bot",
+                text: `The full form of COAZ is "College of Anesthesiologists of Zambia".`,
+                responseType: "factual_short"
+            });
+        }
+
+        if (queryLower.includes('join') && queryLower.includes('coaz') && queryLower.length < 30) {
+            return res.json({
+                sender: "bot",
+                text: `To join COAZ, you need a medical degree, anesthesiology training, and valid Zambian medical registration. Apply through the COAZ membership committee.`,
+                responseType: "factual_short"
+            });
+        }
+
+        // PRIORITY 4: Generic AI/Offline Response
+        console.log('[PRIORITY] Using generic response system...');
+        
+        response = null;
+        responseType = "generic";
+
+        if (config.offlineResponse.enabled) {
+            console.log("[GENERIC] Using enhanced offline response system");
+            response = generateOfflineResponse(query, null);
+            responseType = "offline_generic";
+        } else {
+            console.log("[GENERIC] Using AI response system");
+            try {
                 response = await generateIntelligentResponse(query, null, sessionId);
                 responseType = "ai_general";
+            } catch (error) {
+                console.log("[GENERIC] AI failed, using basic fallback");
+                response = `I understand you're asking about "${query}". I'm having trouble generating a detailed response right now. Please try rephrasing your question or contact COAZ directly for assistance.`;
+                responseType = "basic_fallback";
             }
         }
 
@@ -1014,6 +1798,59 @@ app.post("/api/debug-query", async (req, res) => {
     }
 
     res.json(debugInfo);
+});
+
+// Configuration endpoint to toggle offline responses
+app.post('/api/config/offline-response', (req, res) => {
+    try {
+        const { enabled, fallbackOnly, forceSimpleAnswers } = req.body;
+        
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: "enabled must be a boolean value" });
+        }
+        
+        // Update configuration
+        config.offlineResponse.enabled = enabled;
+        if (fallbackOnly !== undefined) config.offlineResponse.fallbackOnly = fallbackOnly;
+        if (forceSimpleAnswers !== undefined) config.offlineResponse.forceSimpleAnswers = forceSimpleAnswers;
+        
+        logger.info(`Offline response configuration updated`, {
+            enabled: config.offlineResponse.enabled,
+            fallbackOnly: config.offlineResponse.fallbackOnly,
+            forceSimpleAnswers: config.offlineResponse.forceSimpleAnswers,
+            service: 'coaz-chatbot'
+        });
+        
+        res.json({
+            success: true,
+            message: 'Offline response configuration updated',
+            config: config.offlineResponse
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get current configuration
+app.get('/api/config', (req, res) => {
+    try {
+        res.json({
+            ai: {
+                provider: config.ai.provider,
+                fallbackToOffline: config.ai.fallbackToOffline
+            },
+            rag: config.rag,
+            offlineResponse: config.offlineResponse,
+            environment: config.nodeEnv,
+            serverStatus: {
+                constitutionLoaded: constitutionSections.length > 0,
+                ragInitialized: !!ragSystem,
+                sectionsCount: constitutionSections.length
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Test different query types
