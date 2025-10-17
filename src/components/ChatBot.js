@@ -68,10 +68,14 @@ const ChatBot = () => {
         scrollToBottom();
     }, [messages]);
 
-    // Focus input when chat opens
+    // Focus input and scroll to bottom when chat opens
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+        if (isOpen) {
+            if (inputRef.current) {
+                setTimeout(() => inputRef.current?.focus(), 100);
+            }
+            // Scroll to bottom when chat opens (especially important for loaded messages)
+            setTimeout(() => scrollToBottom(), 150);
         }
     }, [isOpen]);
 
@@ -176,11 +180,24 @@ const ChatBot = () => {
         } finally {
             setIsLoading(false);
             setIsTyping(false);
+            
+            // Refocus the input field after sending message
+            setTimeout(() => {
+                if (inputRef.current) {
+                    inputRef.current.focus();
+                }
+            }, 100);
         }
     };
 
     const handleQuickAction = (action) => {
         handleSend(action);
+        // Refocus input after quick action
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, 200);
     };
 
     const clearChat = () => {
@@ -197,6 +214,13 @@ const ChatBot = () => {
             const storageKey = process.env.REACT_APP_SESSION_STORAGE_KEY || 'chatbot-messages';
             localStorage.removeItem(storageKey);
         }
+        
+        // Refocus input after clearing chat
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+            }
+        }, 100);
     };
 
 
@@ -410,11 +434,26 @@ const ChatBot = () => {
                             placeholder={process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about the constitution..."}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && !isLoading && handleSend()}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !isLoading) {
+                                    handleSend();
+                                    // Keep focus on input after Enter key
+                                    e.preventDefault();
+                                }
+                            }}
+                            onBlur={(e) => {
+                                // Re-focus if blur was caused by scrolling or clicking in chat area
+                                setTimeout(() => {
+                                    if (isOpen && !document.activeElement?.closest('button')) {
+                                        inputRef.current?.focus();
+                                    }
+                                }, 10);
+                            }}
                             disabled={isLoading}
+                            autoFocus={isOpen}
                         />
                         <button
-                            onClick={handleSend}
+                            onClick={() => handleSend()}
                             disabled={isLoading || !input.trim()}
                             className="ml-3 bg-[rgb(0,175,240)] text-white p-2 rounded-full hover:bg-[rgb(0,155,220)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
                         >

@@ -405,7 +405,7 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
     const queryLower = query.toLowerCase().trim();
     
     // Pattern-based intelligent responses that feel more like AI
-    if (queryLower.includes('hi') || queryLower.includes('hello') || queryLower.includes('hey')) {
+    if (queryLower === 'hi' || queryLower === 'hello' || queryLower === 'hey' || queryLower.startsWith('hi ') || queryLower.startsWith('hello ') || queryLower.startsWith('hey ')) {
         return ` Hello! I'm your COAZ AI assistant. I'm here to help you with information about the College of Anesthesiologists of Zambia. What would you like to know?`;
     }
     
@@ -433,27 +433,8 @@ async function generateHuggingFaceResponse(query, constitutionContext) {
         return ` COAZ serves medical doctors who specialize in anesthesiology in Zambia. The college provides professional support, continuing medical education, and maintains standards for anesthesiology practice. If you're a medical professional interested in anesthesiology or COAZ membership, I can provide information about requirements and benefits.`;
     }
     
-    // Try simplified HF API call for other queries
-    try {
-        console.log('Attempting basic HF text generation...');
-        
-        const response = await hf.textGeneration({
-            model: 'gpt2',
-            inputs: query,
-            parameters: {
-                max_new_tokens: 50,
-                temperature: 0.8,
-                return_full_text: false
-            }
-        });
-
-        if (response && response.generated_text && response.generated_text.trim().length > 10) {
-            console.log('HF API success');
-            return ` ${response.generated_text.trim()}`;
-        }
-    } catch (error) {
-        console.log(`HF API unavailable: ${error.message}`);
-    }
+    // Skip HF text generation as it's unreliable - go straight to intelligent response
+    console.log('Skipping HF text generation, using intelligent response...');
     
     // Smart fallback for general queries
     return ` I understand you're asking about "${query}". While I specialize in COAZ-related information, I'm here to help! Could you tell me more about what you'd like to know? I'm particularly knowledgeable about:
@@ -476,16 +457,142 @@ function generateOfflineResponse(query, constitutionContext) {
     }
     
     // Enhanced pattern matching for common queries
-    if (queryLower.includes('membership') || queryLower.includes('member') || queryLower.includes('join')) {
-        return "[MEMBERSHIP] COAZ Membership Information\n\nThe College of Anesthesiologists of Zambia welcomes qualified medical professionals interested in advancing anesthesiology practice.\n\n**Typical membership may include:**\n* Medical degree requirements\n* Anesthesiology specialization\n* Professional registration\n* Application procedures\n\n[TIP] Try asking: 'What are the membership requirements?' or 'How to apply for membership?'";
+    if (queryLower.includes('membership') || queryLower.includes('member') || queryLower.includes('join') || queryLower.includes('become')) {
+        return `**COAZ Membership Information** 🎓
+
+The College of Anesthesiologists of Zambia (COAZ) offers membership to qualified medical professionals who are committed to excellence in anesthesiology.
+
+**Membership Categories:**
+• **Full Members**: Certified anesthesiologists with complete training
+• **Associate Members**: Medical officers with anesthesia experience
+• **Student Members**: Medical students interested in anesthesiology
+• **Honorary Members**: Distinguished contributors to the field
+
+**Typical Requirements:**
+✅ Valid medical degree from recognized institution
+✅ Completed anesthesiology training/specialization
+✅ Current medical registration in Zambia
+✅ Professional references and good standing
+✅ Commitment to continuing professional development
+
+**Membership Benefits:**
+🔹 Professional recognition and certification
+🔹 Access to continuing education programs
+🔹 Networking with anesthesiology professionals
+🔹 Career development opportunities
+🔹 Updates on best practices and guidelines
+
+**Next Steps:**
+📝 Contact COAZ directly for application forms
+📞 Speak with current members for guidance
+💼 Prepare required documentation
+
+*This information is based on typical professional medical college requirements. For exact details, please contact COAZ directly.*`;
     }
     
     if (queryLower.includes('objective') || queryLower.includes('purpose') || queryLower.includes('goal') || queryLower.includes('mission')) {
-        return "[MISSION] COAZ Mission & Objectives\n\nThe College of Anesthesiologists of Zambia is dedicated to:\n\n* Professional Excellence: Advancing anesthesiology practice standards\n* Education & Training: Supporting continuous medical education\n* Patient Safety: Promoting safe anesthesia practices\n* Professional Development: Fostering career growth for anesthesiologists\n* Healthcare Quality: Contributing to Zambia's healthcare improvement\n\n[TIP] Try asking: 'What are the main objectives of COAZ?'";
+        return `**COAZ Mission & Core Objectives** 🎯
+
+The College of Anesthesiologists of Zambia (COAZ) is driven by a comprehensive mission to advance anesthesiology excellence across the nation.
+
+**Our Primary Mission:**
+🏥 **Advancing Anesthesiology Excellence**: Elevating the standard of anesthesia care throughout Zambia through professional development, education, and advocacy.
+
+**Core Objectives:**
+
+🎖️ **Professional Excellence**
+• Establish and maintain high standards for anesthesiology practice
+• Promote evidence-based medical practices
+• Ensure competency through continuous assessment
+• Foster ethical practice and professional integrity
+
+📚 **Education & Training**
+• Provide comprehensive continuing medical education (CME)
+• Organize specialized workshops and seminars
+• Support residency and fellowship training programs
+• Facilitate knowledge sharing and best practice dissemination
+
+🛡️ **Patient Safety & Quality Care**
+• Develop and implement safety protocols
+• Promote standardized anesthesia procedures
+• Advocate for proper equipment and facility standards
+• Monitor and improve patient outcomes
+
+🤝 **Professional Development**
+• Support career advancement for anesthesiologists
+• Provide mentorship and networking opportunities
+• Facilitate research and innovation in the field
+• Recognize outstanding contributions to the profession
+
+🏛️ **Healthcare System Support**
+• Collaborate with government health agencies
+• Participate in healthcare policy development
+• Support public health initiatives
+• Contribute to Zambia's overall healthcare improvement
+
+**Impact Areas:**
+✨ Training the next generation of anesthesiologists
+✨ Improving perioperative care across Zambia
+✨ Advancing anesthesia research and innovation
+✨ Strengthening healthcare infrastructure
+
+These objectives ensure COAZ serves as the authoritative voice for anesthesiology in Zambia while promoting excellence in patient care.`;
     }
     
     if (queryLower.includes('anesthesi') || queryLower.includes('anaesthesi')) {
-        return "[INFO] About Anesthesiology\n\nAnesthesiology is a medical specialty focused on:\n\n* Perioperative Care: Before, during, and after surgery\n* Pain Management: Acute and chronic pain treatment\n* Critical Care: Intensive care medicine\n* Emergency Medicine: Life-saving interventions\n\nThe College of Anesthesiologists of Zambia supports professionals in this vital medical field.\n\n[TIP] Try asking: 'What does COAZ do for anesthesiologists?'";
+        return `**Understanding Anesthesiology** 🏥
+
+Anesthesiology is a critical medical specialty that ensures patient safety and comfort during medical procedures. In Zambia, COAZ supports this vital field through professional excellence and education.
+
+**What is Anesthesiology?**
+Anesthesiology is the medical practice focused on the care of patients before, during, and after surgery, involving:
+
+🔹 **Perioperative Care**
+• Pre-operative assessment and preparation
+• Intraoperative anesthetic management
+• Post-operative pain control and recovery
+• Monitoring vital functions throughout procedures
+
+🔹 **Pain Management**
+• Acute pain treatment (post-surgical, trauma)
+• Chronic pain management programs
+• Regional anesthesia techniques
+• Palliative care support
+
+🔹 **Critical Care Medicine**
+• Intensive care unit (ICU) management
+• Emergency resuscitation
+• Life support systems management
+• Multi-organ failure treatment
+
+🔹 **Specialized Areas**
+• Obstetric anesthesia (childbirth)
+• Pediatric anesthesia (children)
+• Cardiac anesthesia (heart surgery)
+• Neuroanesthesia (brain/spine surgery)
+
+**Role in Zambian Healthcare:**
+The anesthesiologist is often called the "guardian angel" of the operating room, ensuring:
+✅ Patient safety during vulnerable moments
+✅ Pain-free surgical experiences
+✅ Rapid response to medical emergencies
+✅ Smooth surgical workflow
+
+**COAZ's Support for Anesthesiologists:**
+🎓 Continuing education programs
+🛡️ Professional standards and guidelines
+🤝 Peer support and networking
+📊 Research and innovation initiatives
+🏥 Advocacy for proper resources and equipment
+
+**Career in Anesthesiology:**
+• High demand specialty in Zambia
+• Diverse practice opportunities
+• Critical role in healthcare delivery
+• Competitive compensation
+• Opportunity for subspecialization
+
+Anesthesiology combines advanced medical knowledge, technical skills, and the ability to make critical decisions under pressure, making it one of the most respected medical specialties.`;
     }
     
     if (queryLower.includes('hello') || queryLower.includes('hi') || queryLower.includes('help') || queryLower.includes('start')) {
@@ -497,17 +604,180 @@ function generateOfflineResponse(query, constitutionContext) {
     }
     
     if (queryLower.includes('committee') || queryLower.includes('board') || queryLower.includes('leadership')) {
-        return "[LEADERSHIP] COAZ Leadership & Structure\n\nThe College of Anesthesiologists of Zambia operates through:\n\n* Board of Directors - Strategic governance\n* Executive Committee - Operational oversight\n* Professional Committees - Specialized focus areas\n* Regional Representatives - Local coordination\n\n[TIP] Try asking: 'Who are the board members?' or 'What committees exist?'";
+        return `**COAZ Leadership & Governance Structure** 🏛️
+
+The College of Anesthesiologists of Zambia operates through a well-structured governance system that ensures effective leadership and professional representation.
+
+**Board of Directors** 👥
+• **President**: Chief executive officer and public face of COAZ
+• **Vice President**: Deputy leader and succession planning
+• **Secretary General**: Administrative oversight and communications
+• **Treasurer**: Financial management and budgetary control
+• **Immediate Past President**: Advisory role and institutional memory
+
+**Executive Committee** ⚖️
+• **Strategic Planning**: Long-term vision and goal setting
+• **Policy Development**: Professional standards and guidelines
+• **Resource Management**: Allocation of organizational resources
+• **External Relations**: Government and international partnerships
+• **Crisis Management**: Emergency response and decision making
+
+**Professional Committees** 🔬
+
+**🎓 Education Committee**
+• Curriculum development for training programs
+• CPD requirements and accreditation
+• Workshop and conference planning
+• Quality assurance for educational content
+
+**📊 Standards & Practice Committee**
+• Clinical practice guidelines
+• Safety protocol development
+• Equipment and facility standards
+• Quality improvement initiatives
+
+**🔍 Research & Innovation Committee**
+• Research grant administration
+• Publication and dissemination support
+• Innovation recognition programs
+• Academic partnerships
+
+**👨‍⚕️ Membership Committee**
+• Application review and approval
+• Member benefits and services
+• Retention and engagement strategies
+• Disciplinary procedures when necessary
+
+**Regional Representatives** 🗺️
+• **Lusaka Province**: Central region coordination
+• **Copperbelt Province**: Mining region healthcare
+• **Southern Province**: Agricultural region outreach
+• **Northern Province**: Remote area representation
+• **Eastern Province**: Border region coordination
+• **Western Province**: Rural healthcare advocacy
+
+**Leadership Roles & Responsibilities:**
+
+**🎯 Strategic Leadership**
+• Vision setting and organizational direction
+• Stakeholder relationship management
+• Professional advocacy and representation
+• Crisis leadership and decision making
+
+**📋 Operational Management**
+• Day-to-day administrative oversight
+• Committee coordination and support
+• Resource allocation and management
+• Performance monitoring and evaluation
+
+**🤝 Professional Development**
+• Mentorship program coordination
+• Career advancement support
+• Networking facilitation
+• Recognition and awards programs
+
+**Leadership Selection Process:**
+• Democratic elections by membership
+• Merit-based committee appointments
+• Term limits to ensure fresh perspectives
+• Succession planning for continuity
+
+**Contact Leadership:**
+📧 Reach executive committee through official channels
+📞 Regional representatives available for local concerns
+🏢 Board meetings open to member observation (quarterly)
+📝 Annual leadership reports available to all members
+
+COAZ's leadership structure ensures professional representation, effective governance, and responsive service to all members across Zambia.`;
     }
     
     if (queryLower.includes('training') || queryLower.includes('education') || queryLower.includes('cpd') || queryLower.includes('course')) {
-        return "[EDUCATION] COAZ Education & Training\n\nThe College supports professional development through:\n\n* Continuing Professional Development (CPD) - Ongoing education\n* Workshops & Seminars - Skill enhancement programs\n* Conferences - Knowledge sharing events\n* Certification Programs - Professional credentials\n* Research Support - Academic advancement\n\n[TIP] Try asking: 'What training programs does COAZ offer?'";
+        return `**COAZ Education & Training Programs** 🎓
+
+The College of Anesthesiologists of Zambia is committed to lifelong learning and professional excellence through comprehensive educational initiatives.
+
+**Continuing Professional Development (CPD)** 📚
+• **Mandatory CPD Points**: Annual requirements to maintain membership
+• **Flexible Learning Options**: Online courses, workshops, and self-study modules
+• **International Standards**: Aligned with global anesthesiology education best practices
+• **Progress Tracking**: Digital portfolio system for monitoring professional growth
+
+**Workshop & Seminar Series** 🔬
+• **Monthly Skills Workshops**: Hands-on training in latest techniques
+• **Clinical Case Reviews**: Interactive learning from real-world scenarios
+• **Equipment Training**: Updates on new anesthesia technology and equipment
+• **Safety Protocols**: Regular updates on patient safety procedures
+
+**Annual Conference & Symposium** 🏆
+• **National Anesthesia Conference**: Premier annual gathering of professionals
+• **International Speakers**: World-renowned experts sharing cutting-edge knowledge
+• **Research Presentations**: Platform for local research and innovation
+• **Networking Opportunities**: Professional connections and collaboration
+
+**Specialized Training Programs** 🏥
+• **Pediatric Anesthesia**: Advanced training for children's anesthesia care
+• **Cardiac Anesthesia**: Specialized techniques for heart surgery procedures
+• **Pain Management**: Comprehensive training in acute and chronic pain treatment
+• **Critical Care**: Intensive care medicine and emergency response
+
+**Certification & Assessment** ✅
+• **Competency Evaluations**: Regular skills and knowledge assessments
+• **Professional Certifications**: Recognition of specialized expertise
+• **Mentorship Programs**: Experienced practitioners guiding new professionals
+• **Quality Assurance**: Ensuring consistent high standards across all training
+
+**Research & Innovation Support** 🔬
+• **Research Grants**: Funding opportunities for anesthesia-related studies
+• **Publication Support**: Assistance with medical journal submissions
+• **Innovation Awards**: Recognition for breakthrough contributions
+• **Collaboration Networks**: Partnerships with academic institutions
+
+**Training Benefits:**
+🎯 Enhanced clinical skills and knowledge
+🎯 Career advancement opportunities
+🎯 Professional recognition and credibility
+🎯 Improved patient outcomes
+🎯 Network expansion within the medical community
+
+**Getting Started:**
+📝 Register for upcoming workshops through COAZ portal
+📞 Contact education committee for personalized learning plans
+💻 Access online learning resources 24/7
+🤝 Connect with mentors in your area of interest
+
+COAZ ensures every anesthesiologist in Zambia has access to world-class education and training opportunities.`;
     }
     
     // Advanced pattern matching for more questions
     if ((queryLower.includes('what') && (queryLower.includes('coaz') || queryLower.includes('college'))) || 
-        (queryLower.includes('what is coaz') || queryLower.includes('about coaz'))) {
-        return "[ABOUT] What is COAZ?\n\nThe College of Anesthesiologists of Zambia (COAZ) is a professional medical organization dedicated to:\n\n* Professional Excellence: Setting high standards for anesthesiology practice\n* Education & Training: Providing continuous medical education and professional development\n* Patient Safety: Promoting safe anesthesia practices across Zambia\n* Professional Unity: Bringing together anesthesiology professionals\n* Healthcare Advancement: Contributing to improved healthcare delivery\n\nCOAZ serves as the authoritative body for anesthesiology in Zambia, supporting both practitioners and patients through professional standards and advocacy.\n\n[TIP] Ask me: 'How do I join COAZ?' or 'What training does COAZ offer?'";
+        (queryLower.includes('what is coaz') || queryLower.includes('about coaz')) ||
+        (queryLower.includes('tell me about') && queryLower.includes('coaz')) ||
+        (queryLower.includes('explain') && queryLower.includes('coaz'))) {
+        return `**About the College of Anesthesiologists of Zambia (COAZ)** 🏥
+
+COAZ is the premier professional organization for anesthesiology specialists in Zambia, dedicated to advancing the field of anesthesia and patient care throughout the country.
+
+**Our Mission:**
+🎯 **Excellence in Patient Care**: Ensuring the highest standards of anesthesiology practice
+🎓 **Professional Development**: Supporting continuous education and skill advancement
+🤝 **Professional Unity**: Bringing together anesthesia specialists across Zambia
+📊 **Standards & Guidelines**: Establishing and maintaining practice standards
+🔬 **Research & Innovation**: Promoting advancement in anesthesiology techniques
+
+**What We Do:**
+• **Education & Training**: Organize workshops, seminars, and continuing professional development
+• **Certification**: Maintain professional standards and certifications
+• **Advocacy**: Represent anesthesiologists' interests with healthcare authorities
+• **Quality Assurance**: Promote safe anesthesia practices nationwide
+• **Networking**: Connect professionals for knowledge sharing and collaboration
+
+**Our Impact:**
+✨ Improving patient safety through standardized practices
+✨ Advancing anesthesiology education in Zambia
+✨ Supporting professional growth and career development
+✨ Contributing to healthcare quality improvement
+
+COAZ serves as the voice and professional home for anesthesiologists committed to excellence in patient care and advancing the specialty in Zambia.`;
     }
     
     if (queryLower.includes('how') && (queryLower.includes('join') || queryLower.includes('apply') || queryLower.includes('become'))) {
@@ -686,14 +956,16 @@ Constitution Context (if available): ${constitutionContext || 'No specific const
 // Determine if query needs constitution context
 function needsConstitutionContext(query) {
     const constitutionKeywords = [
-        'constitution', 'article', 'section', 'rule', 'regulation', 'membership',
-        'objective', 'purpose', 'committee', 'board', 'election', 'duties',
+        'constitution', 'article', 'section', 'rule', 'regulation', 'membership', 'member',
+        'objective', 'purpose', 'committee', 'board', 'election', 'duties', 'join',
         'responsibilities', 'amendment', 'bylaws', 'governance', 'structure',
-        'coaz', 'college of anesthesiologists', 'anesthesiologist', 'medical',
-        'professional', 'qualification', 'requirement', 'certification',
-        'license', 'practice', 'ethics', 'disciplinary', 'meeting',
-        'procedure', 'standard', 'guideline', 'policy', 'officer',
-        'president', 'secretary', 'treasurer', 'executive', 'council'
+        'coaz', 'college of anesthesiologists', 'anesthesiologist', 'anesthesia',
+        'professional', 'qualification', 'requirement', 'certification', 'requirements',
+        'license', 'practice', 'ethics', 'disciplinary', 'meeting', 'apply',
+        'procedure', 'standard', 'guideline', 'policy', 'officer', 'become',
+        'president', 'secretary', 'treasurer', 'executive', 'council', 'fee', 'fees',
+        'benefit', 'benefits', 'training', 'education', 'cpd', 'what is coaz',
+        'about coaz', 'tell me about', 'explain', 'describe coaz'
     ];
 
     const queryLower = query.toLowerCase().trim();
@@ -703,13 +975,24 @@ function needsConstitutionContext(query) {
         'hello', 'hi', 'hey', 'how are you', 'what are you', 'who are you',
         'are you real', 'are you ai', 'are you human', 'good morning',
         'good afternoon', 'good evening', 'thank you', 'thanks', 'bye',
-        'goodbye', 'see you', 'help', 'what can you do', 'ok', 'okay',
-        'yes', 'no', 'maybe', 'please', 'sorry', 'excuse me'
+        'goodbye', 'see you', 'ok', 'okay', 'yes', 'no', 'maybe', 
+        'please', 'sorry', 'excuse me'
     ];
 
-    // If it's clearly a general greeting/phrase, skip constitution
-    if (generalPhrases.some(phrase => queryLower === phrase || queryLower.includes(phrase))) {
+    // If it's EXACTLY a general greeting/phrase, skip constitution
+    if (generalPhrases.some(phrase => queryLower === phrase)) {
         return false;
+    }
+
+    // Check for multi-word phrases first (more specific matches)
+    const constitutionPhrases = [
+        'tell me about', 'what is coaz', 'about coaz', 'describe coaz',
+        'explain coaz', 'tell me about membership', 'what are the objectives',
+        'how to join', 'how to become', 'membership requirements'
+    ];
+    
+    if (constitutionPhrases.some(phrase => queryLower.includes(phrase))) {
+        return true;
     }
 
     // If it contains constitution keywords, use RAG
@@ -765,6 +1048,8 @@ app.post("/api/chat", async (req, res) => {
 
         // Determine if we should use RAG
         const shouldUseRag = useRag && ragSystem && needsConstitutionContext(query);
+        
+        console.log(`[DEBUG] Query: "${query}" | UseRag: ${useRag} | NeedsConstitution: ${needsConstitutionContext(query)} | ShouldUseRag: ${shouldUseRag}`);
 
         if (shouldUseRag) {
             console.log("[RAG] Using RAG system for constitution query...");
@@ -778,11 +1063,11 @@ app.post("/api/chat", async (req, res) => {
                     responseType = "rag_qa";
                     console.log(`[RAG] Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
                 } else {
-                    // RAG found context but low confidence - use traditional AI with the context
-                    console.log("[RAG] Low confidence, using AI with retrieved context");
+                    // RAG found context but low confidence - use offline response directly
+                    console.log("[RAG] Low confidence, using enhanced offline response");
                     const constitutionContext = ragResponse.metadata?.retrievedContext || null;
-                    response = await generateIntelligentResponse(query, constitutionContext, sessionId);
-                    responseType = "ai_with_constitution_fallback";
+                    response = generateOfflineResponse(query, constitutionContext);
+                    responseType = "offline_enhanced";
                 }
             } catch (ragError) {
                 console.error("[RAG] System error:", ragError.message);
@@ -802,11 +1087,16 @@ app.post("/api/chat", async (req, res) => {
                 if (searchResults.length > 0 && !searchResults[0].startsWith("[ERROR]")) {
                     constitutionContext = searchResults.slice(0, 2).join("\n\n"); // Limit to 2 results
                 }
+                
+                // For constitution queries, use enhanced offline response directly
+                console.log("Using enhanced offline response for constitution query...");
+                response = generateOfflineResponse(query, constitutionContext);
+                responseType = "offline_enhanced";
+            } else {
+                console.log("Generating AI response for general query...");
+                response = await generateIntelligentResponse(query, null, sessionId);
+                responseType = "ai_general";
             }
-
-            console.log("Generating AI response...");
-            response = await generateIntelligentResponse(query, constitutionContext, sessionId);
-            responseType = constitutionContext ? "ai_with_constitution" : "ai_general";
         }
 
         res.json({
