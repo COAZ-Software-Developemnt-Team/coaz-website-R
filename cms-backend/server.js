@@ -1354,6 +1354,87 @@ function generateAlternativeQueries(originalQuery) {
     return alternatives;
 }
 
+// Format RAG response with context and proper formatting
+function formatRAGResponse(ragResponse, originalQuery) {
+    const queryLower = originalQuery.toLowerCase().trim();
+    
+    // Extract the main answer and context
+    const answer = ragResponse.answer || '';
+    const confidence = ragResponse.confidence || 0;
+    const sections = ragResponse.metadata?.retrievedSections || [];
+    
+    // Create a contextual header based on the query
+    let contextualHeader = "COAZ Information";
+    
+    if (queryLower.includes('fee') || queryLower.includes('cost') || queryLower.includes('payment')) {
+        contextualHeader = "COAZ Membership Fees & Payments";
+    } else if (queryLower.includes('membership') || queryLower.includes('member')) {
+        contextualHeader = "COAZ Membership Information";
+    } else if (queryLower.includes('objective') || queryLower.includes('purpose') || queryLower.includes('mission')) {
+        contextualHeader = "COAZ Objectives & Mission";
+    } else if (queryLower.includes('committee') || queryLower.includes('board') || queryLower.includes('leadership')) {
+        contextualHeader = "COAZ Leadership & Governance";
+    } else if (queryLower.includes('training') || queryLower.includes('education') || queryLower.includes('cpd')) {
+        contextualHeader = "COAZ Education & Training";
+    } else if (queryLower.includes('election') || queryLower.includes('voting')) {
+        contextualHeader = "COAZ Elections & Procedures";
+    }
+    
+    // Start building the formatted response
+    let formattedResponse = `<strong>${contextualHeader}</strong><br><br>`;
+    
+    // Clean and format the main answer
+    let cleanAnswer = answer
+        .replace(/\s+/g, ' ')  // Normalize spaces
+        .replace(/\n+/g, ' ')  // Remove line breaks
+        .trim();
+    
+    // Add context to the answer
+    if (cleanAnswer.length > 0) {
+        // Capitalize first letter if needed
+        cleanAnswer = cleanAnswer.charAt(0).toUpperCase() + cleanAnswer.slice(1);
+        
+        // Add period if missing
+        if (!cleanAnswer.endsWith('.') && !cleanAnswer.endsWith('!') && !cleanAnswer.endsWith('?')) {
+            cleanAnswer += '.';
+        }
+        
+        formattedResponse += `${cleanAnswer}<br><br>`;
+    }
+    
+    // Add relevant sections if available
+    if (sections && sections.length > 0) {
+        formattedResponse += `<strong>Related Constitutional Provisions:</strong><br>`;
+        sections.slice(0, 2).forEach((section, index) => {
+            const sectionText = section.content || section.text || section;
+            if (typeof sectionText === 'string' && sectionText.length > 20) {
+                const cleanSection = sectionText
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .substring(0, 300);
+                formattedResponse += `• ${cleanSection}${cleanSection.length === 300 ? '...' : ''}<br>`;
+            }
+        });
+        formattedResponse += `<br>`;
+    }
+    
+    // Add confidence and source information
+    const confidenceLevel = confidence >= 0.7 ? 'High' : confidence >= 0.4 ? 'Medium' : 'Low';
+    const confidenceEmoji = confidence >= 0.7 ? '✅' : confidence >= 0.4 ? '⚠️' : '❓';
+    
+    formattedResponse += `<strong>Source Information:</strong><br>`;
+    formattedResponse += `${confidenceEmoji} <strong>Confidence Level:</strong> ${confidenceLevel} (${(confidence * 100).toFixed(0)}%)<br>`;
+    formattedResponse += `📄 <strong>Source:</strong> COAZ Constitution & Official Documents<br>`;
+    
+    if (sections && sections.length > 0) {
+        formattedResponse += `📊 <strong>References:</strong> ${sections.length} relevant section${sections.length > 1 ? 's' : ''} found<br>`;
+    }
+    
+    formattedResponse += `<br><em>This information is sourced directly from the COAZ constitution and official documents.</em>`;
+    
+    return formattedResponse;
+}
+
 // Enhanced query processing with website data
 async function getWebsiteContext(query) {
     const queryLower = query.toLowerCase();
@@ -1457,37 +1538,7 @@ function needsConstitutionContext(query) {
     return constitutionKeywords.some(keyword => queryLower.includes(keyword));
 }
 
-// Format RAG response for user display
-function formatRAGResponse(ragResponse) {
-    const { answer, confidence, model, contextChunks, metadata } = ragResponse;
-    
-    let formattedResponse = `[RAG-QA] ${answer}`;
-    
-    // Add confidence indicator
-    if (confidence > 0.7) {
-        formattedResponse += "\n\n✅ High confidence answer";
-    } else if (confidence > 0.3) {
-        formattedResponse += "\n\n⚠️ Medium confidence answer";
-    } else {
-        formattedResponse += "\n\n❓ Low confidence answer";
-    }
-    
-    // Add model information
-    if (metadata?.isExtraction) {
-        formattedResponse += "\n\n📄 *Answer extracted from constitution text*";
-    } else if (metadata?.isFallback) {
-        formattedResponse += "\n\n🔄 *Generated using fallback AI model*";
-    } else {
-        formattedResponse += "\n\n🤖 *Generated using specialized QA model*";
-    }
-    
-    // Add source information
-    if (contextChunks > 0) {
-        formattedResponse += `\n\n📚 *Based on ${contextChunks} relevant section${contextChunks > 1 ? 's' : ''} from the constitution*`;
-    }
-    
-    return formattedResponse;
-}
+// This old formatRAGResponse function is replaced by the enhanced one above
 
 // Enhanced chat endpoint with RAG system
 // Enhanced chat endpoint with RAG system
@@ -1603,11 +1654,15 @@ app.post("/api/chat", async (req, res) => {
             try {
                 ragResponse = await ragSystem.processQuery(query);
 
-                // If RAG provides a confident answer, use it
+                // If RAG provides a confident answer, use it with enhanced formatting
                 if (ragResponse.confidence > 0.1 && ragResponse.hasRelevantContext) {
-                    response = formatRAGResponse(ragResponse);
-                    responseType = "rag_qa";
                     console.log(`[DOCUMENT] RAG Success - Confidence: ${ragResponse.confidence.toFixed(2)}`);
+                    console.log(`[DOCUMENT] Raw RAG answer: "${ragResponse.answer}"`);
+                    
+                    response = formatRAGResponse(ragResponse, query);
+                    responseType = "rag_qa_formatted";
+                    
+                    console.log(`[DOCUMENT] Formatted RAG response length: ${response.length}`);
                     
                     return res.json({
                         sender: "bot",
