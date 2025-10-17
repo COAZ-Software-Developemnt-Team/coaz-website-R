@@ -19,6 +19,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
 const { JSDOM } = require('jsdom');
+const path = require('path');
 
 const app = express();
 
@@ -39,7 +40,11 @@ const config = {
     webScraping: {
         enabled: process.env.WEB_SCRAPING_ENABLED !== 'false', // Default: enabled
         coazWebsite: process.env.COAZ_WEBSITE_URL || 'https://coaz.org',
-        cacheTimeout: parseInt(process.env.WEB_CACHE_TIMEOUT) || 3600000 // 1 hour default
+        cacheTimeout: parseInt(process.env.WEB_CACHE_TIMEOUT) || 3600000, // 1 hour default
+        useJavaScriptRendering: process.env.USE_JS_RENDERING !== 'false', // Enable JS rendering by default
+        enhancedExtraction: process.env.ENHANCED_EXTRACTION !== 'false', // Enhanced content extraction
+        indexPath: process.env.WEBSITE_INDEX_PATH || path.join(__dirname, 'website-index.json'),
+        adminToken: process.env.WEBSITE_ADMIN_TOKEN || ''
     },
     openai: {
         apiKey: process.env.OPENAI_API_KEY || '',
@@ -192,6 +197,20 @@ let websiteCache = {
     lastUpdated: null,
     isLoading: false
 };
+
+// Load persisted website index if present
+try {
+    if (fs.existsSync(config.webScraping.indexPath)) {
+        const persisted = JSON.parse(fs.readFileSync(config.webScraping.indexPath, 'utf8'));
+        if (persisted && persisted.pages && Array.isArray(persisted.pages)) {
+            websiteCache.data = persisted;
+            websiteCache.lastUpdated = persisted.lastIndexed || Date.now();
+            console.log(`[WEB] Loaded persisted website index: ${config.webScraping.indexPath} with ${persisted.pages.length} pages`);
+        }
+    }
+} catch (e) {
+    console.warn('[WEB] Failed to load persisted website index:', e.message);
+}
 
 // Clear cache on startup for testing
 websiteCache.data = null;
@@ -861,7 +880,7 @@ Constitution Context (if available): ${constitutionContext || 'No specific const
 }
 
 // Comprehensive website crawler and indexer
-async function scrapeCoazWebsite() {
+async function scrapeCoazWebsite(force = false) {
     if (!config.webScraping.enabled) {
         console.log('[WEB] Web scraping disabled');
         return null;
@@ -869,7 +888,7 @@ async function scrapeCoazWebsite() {
 
     // Check cache first
     const now = Date.now();
-    if (websiteCache.data && websiteCache.lastUpdated && 
+    if (!force && websiteCache.data && websiteCache.lastUpdated && 
         (now - websiteCache.lastUpdated) < config.webScraping.cacheTimeout) {
         console.log('[WEB] Using cached website data');
         return websiteCache.data;
@@ -913,9 +932,18 @@ async function scrapeCoazWebsite() {
         
         console.log(`[WEB] Successfully crawled and indexed ${allPageData.length} pages`);
         
-        // Cache the comprehensive data
+        // Cache and persist the comprehensive data
         websiteCache.data = websiteData;
         websiteCache.lastUpdated = now;
+        try {
+            fs.writeFileSync(config.webScraping.indexPath, JSON.stringify({
+                ...websiteData,
+                lastIndexed: now
+            }, null, 2));
+            console.log(`[WEB] Persisted website index to ${config.webScraping.indexPath}`);
+        } catch (persistErr) {
+            console.error('[WEB] Failed to persist website index:', persistErr.message);
+        }
         
         return websiteData;
 
@@ -966,8 +994,17 @@ async function discoverWebsitePages(baseUrl) {
         }
     });
     
+    // Also include sitemap URLs if available
+    try {
+        const sitemapUrls = await fetchSitemapUrls(baseUrl);
+        sitemapUrls.forEach(u => discovered.add(u));
+        console.log(`[WEB] Added ${sitemapUrls.length} URLs from sitemap.xml`);
+    } catch (e) {
+        console.log(`[WEB] No sitemap or failed to parse: ${e.message}`);
+    }
+
     // Also do automatic discovery for any additional pages
-    const maxPages = 25; // Increased limit
+    const maxPages = 100; // Increased limit to improve coverage
     const toVisit = [baseUrl];
     const visitedForDiscovery = new Set([baseUrl]);
     
@@ -1023,6 +1060,23 @@ async function discoverWebsitePages(baseUrl) {
     }
 }
 
+// Fetch and parse sitemap.xml for additional URLs
+async function fetchSitemapUrls(baseUrl) {
+    const urls = [];
+    try {
+        const sitemapUrl = new URL('/sitemap.xml', baseUrl).href;
+        const resp = await axios.get(sitemapUrl, { timeout: 15000 });
+        if (resp.status !== 200) return urls;
+        const xml = resp.data;
+        const locMatches = [...String(xml).matchAll(/<loc>(.*?)<\/loc>/g)];
+        locMatches.forEach(m => {
+            const u = m[1].trim();
+            if (u.startsWith(baseUrl)) urls.push(u);
+        });
+    } catch (e) {}
+    return urls;
+}
+
 // Scrape multiple pages concurrently
 async function scrapeMultiplePages(urls) {
     const maxConcurrent = 3; // Limit concurrent requests
@@ -1054,31 +1108,284 @@ async function scrapeMultiplePages(urls) {
     return allPageData;
 }
 
-// Scrape a single page comprehensively
+// Enhanced scraping with JavaScript rendering and better content extraction
 async function scrapeSinglePage(url) {
     try {
-        console.log(`[WEB] 📄 Scraping: ${url}`);
+        console.log(`[WEB] 📄 Enhanced scraping: ${url}`);
         
-        const response = await axios.get(url, {
-            timeout: 20000, // Increased timeout
-            headers: {
-                'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive COAZ Website Scraper)',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive'
+        let pageData;
+        
+        // Try JavaScript rendering first for dynamic content
+        if (config.webScraping.useJavaScriptRendering) {
+            pageData = await scrapeWithJavaScript(url);
+            if (pageData) {
+                console.log(`[WEB] ✅ JS rendering successful for: ${url}`);
+                return pageData;
             }
-        });
-
-        if (response.status !== 200) {
-            console.log(`[WEB] ❌ Failed to load ${url}: HTTP ${response.status}`);
-            return null;
+            console.log(`[WEB] ⚠️ JS rendering failed, falling back to static scraping for: ${url}`);
         }
-
-        const $ = cheerio.load(response.data);
-        console.log(`[WEB] ✅ Successfully loaded ${url} (${response.data.length} characters)`);
         
-        // Extract comprehensive page data
+        // Static fallback disabled per request; return null to skip
+        return null;
+        
+    } catch (error) {
+        console.error(`[WEB] ❌ Error scraping ${url}: ${error.message}`);
+        return null;
+    }
+}
+
+// JavaScript rendering with Puppeteer for dynamic content
+async function scrapeWithJavaScript(url) {
+    let browser;
+    try {
+        console.log(`[WEB] 🚀 Launching browser for JS rendering: ${url}`);
+        
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        });
+        
+        const page = await browser.newPage();
+
+        // Capture JSON/XHR responses for SPA data
+        const apiPayloads = [];
+        page.on('response', async (response) => {
+            try {
+                const req = response.request();
+                const urlStr = req.url();
+                const sameOrigin = urlStr.startsWith(new URL(url).origin);
+                const ct = response.headers()['content-type'] || '';
+                if (sameOrigin && ct.includes('application/json')) {
+                    const text = await response.text();
+                    if (text && text.length < 2_000_000) {
+                        apiPayloads.push({ url: urlStr, body: text.slice(0, 8000) });
+                    }
+                }
+            } catch {}
+        });
+        
+        // Set user agent and viewport
+        await page.setUserAgent('COAZ-Chatbot/1.0 (Enhanced Scraper with JavaScript)');
+        await page.setViewport({ width: 1280, height: 720 });
+        
+        // Navigate and wait for content to load
+        await page.goto(url, { 
+            waitUntil: 'networkidle0',
+            timeout: 45000 
+        });
+        
+        // Wait for dynamic content to load (SPA render)
+        await new Promise(resolve => setTimeout(resolve, 6000));
+
+        // Scroll to bottom to trigger lazy load, then back to top
+        try {
+            await page.evaluate(async () => {
+                await new Promise(resolve => {
+                    let totalHeight = 0;
+                    const distance = 800;
+                    const timer = setInterval(() => {
+                        const scrollHeight = document.body.scrollHeight;
+                        window.scrollBy(0, distance);
+                        totalHeight += distance;
+                        if (totalHeight >= scrollHeight - window.innerHeight) {
+                            clearInterval(timer);
+                            resolve();
+                        }
+                    }, 200);
+                });
+            });
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            await page.evaluate(() => window.scrollTo(0, 0));
+        } catch {}
+        
+        // Extract content using enhanced selectors
+        const pageData = await page.evaluate((pageUrl) => {
+            const data = {
+                url: pageUrl,
+                title: document.title || '',
+                description: '',
+                headings: [],
+                content: [],
+                contact: {
+                    phones: [],
+                    emails: [],
+                    addresses: []
+                },
+                navigation: [],
+                lastScraped: Date.now()
+            };
+            
+            // Get meta description
+            const metaDesc = document.querySelector('meta[name="description"]') || document.querySelector('meta[property="og:description"]');
+            if (metaDesc) data.description = metaDesc.getAttribute('content') || '';
+            
+            // Extract headings with better context
+            ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(tag => {
+                document.querySelectorAll(tag).forEach(heading => {
+                    const text = heading.textContent.trim();
+                    if (text && text.length > 3) {
+                        data.headings.push({
+                            level: tag,
+                            text: text,
+                            id: heading.id || null
+                        });
+                    }
+                });
+            });
+            
+            // Enhanced content extraction from meaningful containers
+            const contentSelectors = [
+                '#root', '#app', 'main', 'article', 'section', '.content', '.main-content', 
+                '.container', '.page-content', '.post-content', '.entry-content',
+                'div[class*="content"]', 'div[class*="text"]', 'div[class*="description"]',
+                'p', 'div'
+            ];
+            
+            const extractedContent = new Set();
+            
+            contentSelectors.forEach(selector => {
+                try {
+                    document.querySelectorAll(selector).forEach(element => {
+                        const text = (element.innerText || element.textContent || '').trim();
+                        
+                        // Filter out navigation, header, footer content
+                        const isNavigationContent = element.closest('nav, header, footer, .nav, .menu, .navigation, .header, .footer');
+                        const isScriptContent = element.tagName === 'SCRIPT' || element.tagName === 'STYLE';
+                        
+                        if (!isNavigationContent && !isScriptContent && text && text.length > 50) {
+                            // Avoid duplicate content
+                            if (!extractedContent.has(text)) {
+                                extractedContent.add(text);
+                                data.content.push({
+                                    selector: selector,
+                                    text: text.substring(0, 2000)
+                                });
+                            }
+                        }
+                    });
+                } catch (e) {
+                    // Ignore selector errors
+                }
+            });
+
+            // Also collect alt/aria labels that might include event names like AGM
+            document.querySelectorAll('[aria-label], img[alt]').forEach(el => {
+                const t = (el.getAttribute('aria-label') || el.getAttribute('alt') || '').trim();
+                if (t && t.length > 3) {
+                    data.content.push({ selector: 'aria/alt', text: t.substring(0, 500) });
+                }
+            });
+
+            // Fallback: if no structured content captured, include a sanitized body text excerpt
+            if (data.content.length === 0) {
+                const bodyText = (document.body.innerText || '').replace(/\s+/g, ' ').trim();
+                if (bodyText && bodyText.length > 50) {
+                    data.content.push({ selector: 'body', text: bodyText.substring(0, 8000) });
+                }
+            }
+
+            // Always include a capped full-page innerText block to guarantee indexability
+            const fullInner = (document.body.innerText || '').replace(/\s+/g, ' ').trim();
+            if (fullInner && fullInner.length > 50) {
+                data.content.push({ selector: 'fulltext', text: fullInner.substring(0, 12000) });
+            }
+
+            // Tag extraction for common events like AGM
+            const lower = fullInner.toLowerCase();
+            if (lower.includes('agm') || lower.includes('annual general meeting')) {
+                data.content.push({ selector: 'tag', text: 'AGM (Annual General Meeting)' });
+            }
+            
+            // Extract contact information with enhanced patterns
+            const bodyText = document.body.textContent;
+            
+            // Phone number extraction
+            const phonePatterns = [
+                /(\+260[\d\s\-()]{9,15})/g,
+                /(260[\d\s\-()]{9,})/g,
+                /(\d{3}[\s\-]?\d{3}[\s\-]?\d{4})/g,
+                /((?:\+|00)\d{1,3}[\s\-]?\d{6,14})/g
+            ];
+            
+            phonePatterns.forEach(pattern => {
+                const matches = [...bodyText.matchAll(pattern)];
+                matches.forEach(match => {
+                    const phone = match[1].trim();
+                    if (phone.length >= 9 && !data.contact.phones.includes(phone)) {
+                        data.contact.phones.push(phone);
+                    }
+                });
+            });
+            
+            // Email extraction
+            const emailMatches = [...bodyText.matchAll(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g)];
+            emailMatches.forEach(match => {
+                const email = match[1].trim();
+                if (!data.contact.emails.includes(email)) {
+                    data.contact.emails.push(email);
+                }
+            });
+            
+            // Navigation links
+            document.querySelectorAll('a[href]').forEach(link => {
+                const href = link.getAttribute('href');
+                const text = link.textContent.trim();
+                if (href && text && text.length > 2 && text.length < 100) {
+                    data.navigation.push({ text, href });
+                }
+            });
+            
+            return data;
+        }, url);
+        
+        // Attach captured API payloads into content to make them searchable
+        if (apiPayloads.length) {
+            pageData.content.push(
+                ...apiPayloads.map(p => ({ selector: 'api', text: p.body }))
+            );
+        }
+        console.log(`[WEB] 📊 JS Extracted - Content: ${pageData.content.length}, Headings: ${pageData.headings.length}, Phones: ${pageData.contact.phones.length}, Emails: ${pageData.contact.emails.length}, API: ${apiPayloads.length}`);
+        
+        return pageData;
+        
+    } catch (error) {
+        console.error(`[WEB] 🚫 JavaScript rendering failed for ${url}: ${error.message}`);
+        return null;
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
+
+// Fallback static content scraping
+async function scrapeStaticContent(url) {
+    const response = await axios.get(url, {
+        timeout: 20000,
+        headers: {
+            'User-Agent': 'COAZ-Chatbot/1.0 (Static Content Scraper)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5'
+        }
+    });
+
+    if (response.status !== 200) {
+        console.log(`[WEB] ❌ Failed to load ${url}: HTTP ${response.status}`);
+        return null;
+    }
+
+    const $ = cheerio.load(response.data);
+    console.log(`[WEB] ✅ Static scraping successful: ${url} (${response.data.length} characters)`);
+        
+        // Extract comprehensive page data using static scraping
         const pageData = {
             url: url,
             title: $('title').text() || '',
@@ -1196,12 +1503,40 @@ async function scrapeSinglePage(url) {
             });
         });
 
+        // Extract all headings with hierarchy
+        $('h1, h2, h3, h4, h5, h6').each((index, element) => {
+            const $el = $(element);
+            pageData.headings.push({
+                level: element.tagName.toLowerCase(),
+                text: $el.text().trim(),
+                id: $el.attr('id') || null
+            });
+        });
+
+        // Extract meaningful content sections
+        $('main, article, section, .content, .main-content, .container, p, div').each((index, element) => {
+            const $el = $(element);
+            const text = $el.text().trim();
+            
+            if (text && text.length > 50 && text.length < 2000) {
+                pageData.content.push({
+                    selector: element.tagName.toLowerCase(),
+                    text: text.substring(0, 1000)
+                });
+            }
+        });
+
+        // Contact extraction already handled above in the static scraping section
+        // This section is redundant and removed to fix syntax error
+
+        console.log(`[WEB] 📊 Static Extracted - Content: ${pageData.content.length}, Phones: ${pageData.contact.phones.length}, Emails: ${pageData.contact.emails.length}`);
+
         return pageData;
 
-    } catch (error) {
-        console.error(`[WEB] Error scraping ${url}: ${error.message}`);
-        return null;
-    }
+    // } catch (error) {
+    //     console.error(`[WEB] Error scraping ${url}: ${error.message}`);
+    //     return null;
+    // }
 }
 
 // Index and consolidate content from all pages
@@ -1897,7 +2232,7 @@ function needsConstitutionContext(query) {
 // Enhanced chat endpoint with RAG system
 app.post("/api/chat", async (req, res) => {
     try {
-        const { query, sessionId = 'default', useRag = true } = req.body;
+        let { query, sessionId = 'default', useRag = true } = req.body;
         console.log("[QUERY] User asked:", query);
 
         if (!query || query.trim() === "") {
@@ -2378,16 +2713,14 @@ app.post("/api/test-rag", async (req, res) => {
         console.log(`🧠 RAG System: ${ragSystem ? 'Initialized' : 'Not available'}`);
         console.log(`=====================================\n`);
         
-        // Start comprehensive website indexing on server startup
-        console.log(`\n🕷️  === STARTUP WEBSITE INDEXING ===`);
+        // Always force a fresh website crawl at startup
+        console.log(`\n🕷️  === STARTUP WEBSITE INDEXING (FORCED) ===`);
         console.log(`🔍 Starting comprehensive crawl of ${config.webScraping.coazWebsite}`);
         console.log(`⏱️  This may take a moment...`);
-        
         try {
             const startTime = Date.now();
-            const websiteData = await scrapeCoazWebsite();
+            const websiteData = await scrapeCoazWebsite(true);
             const endTime = Date.now();
-            
             if (websiteData) {
                 console.log(`\n✅ === WEBSITE INDEXING COMPLETE ===`);
                 console.log(`⏱️  Total time: ${((endTime - startTime) / 1000).toFixed(1)} seconds`);
@@ -2402,9 +2735,6 @@ app.post("/api/test-rag", async (req, res) => {
                 console.log(`\n🎉 COAZ Website is now fully indexed and ready for intelligent queries!`);
                 console.log(`💡 Users can now ask about services, programs, events, and more from the live website.`);
                 console.log(`=====================================\n`);
-            } else {
-                console.log(`\n❌ Website indexing failed - chatbot will use fallback responses`);
-                console.log(`=====================================\n`);
             }
         } catch (error) {
             console.error(`\n❌ Error during startup website indexing: ${error.message}`);
@@ -2413,3 +2743,54 @@ app.post("/api/test-rag", async (req, res) => {
         }
     });
 })();
+
+// Admin-protected endpoints to inspect and refresh website index
+app.get('/api/website/status', (req, res) => {
+    const token = req.headers['x-admin-token'] || req.query.token;
+    if (config.webScraping.adminToken && token !== config.webScraping.adminToken) {
+        return res.status(401).json({ error: 'unauthorized' });
+    }
+    return res.json({
+        loaded: !!websiteCache.data,
+        lastUpdated: websiteCache.lastUpdated,
+        pages: websiteCache.data?.pages?.length || 0,
+        contacts: websiteCache.data ? {
+            phones: websiteCache.data.contact?.phones?.length || 0,
+            emails: websiteCache.data.contact?.emails?.length || 0,
+            addresses: websiteCache.data.contact?.addresses?.length || 0
+        } : null,
+        indexPath: config.webScraping.indexPath
+    });
+});
+
+app.post('/api/website/refresh', async (req, res) => {
+    const token = req.headers['x-admin-token'] || req.query.token;
+    if (config.webScraping.adminToken && token !== config.webScraping.adminToken) {
+        return res.status(401).json({ error: 'unauthorized' });
+    }
+    try {
+        const start = Date.now();
+        const force = String(req.query.force || req.body?.force || 'false') === 'true';
+        const data = await scrapeCoazWebsite(force);
+        const ms = Date.now() - start;
+        return res.json({ ok: true, ms, pages: data?.pages?.length || 0 });
+    } catch (e) {
+        return res.status(500).json({ ok: false, error: e.message });
+    }
+});
+
+app.post('/api/website/purge', async (req, res) => {
+    const token = req.headers['x-admin-token'] || req.query.token;
+    if (config.webScraping.adminToken && token !== config.webScraping.adminToken) {
+        return res.status(401).json({ error: 'unauthorized' });
+    }
+    try {
+        websiteCache = { data: null, lastUpdated: null, isLoading: false };
+        if (fs.existsSync(config.webScraping.indexPath)) {
+            fs.unlinkSync(config.webScraping.indexPath);
+        }
+        return res.json({ ok: true, purged: true });
+    } catch (e) {
+        return res.status(500).json({ ok: false, error: e.message });
+    }
+});
