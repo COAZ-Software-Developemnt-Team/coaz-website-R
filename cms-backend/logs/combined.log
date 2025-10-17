@@ -24,3 +24,5 @@
 {"level":"info","message":"POST /api/chat - 200 - 5ms - ::1","service":"coaz-chatbot","timestamp":"2025-10-16T07:06:24.016Z"}
 {"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-16T11:37:48.922Z"}
 {"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-16T11:37:48.930Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-17T06:33:26.717Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-17T06:33:26.722Z"}
