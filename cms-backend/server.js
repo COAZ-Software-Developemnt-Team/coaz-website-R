@@ -925,31 +925,69 @@ async function scrapeCoazWebsite() {
     }
 }
 
-// Discover all pages on the website
+// Discover all pages on the website with specific COAZ navigation targets
 async function discoverWebsitePages(baseUrl) {
     const discovered = new Set();
+    
+    // Add the main page
+    discovered.add(baseUrl);
+    
+    // Specific COAZ pages from the navigation structure you provided
+    const specificPages = [
+        '/home',
+        '/association/delivering_care',
+        '/association/professional_practice', 
+        '/association/training_institutions_and_students',
+        '/association/advocacy_in_health_care',
+        '/association/member_benefits',
+        '/about',
+        '/news',
+        '/services',
+        '/categories',
+        '/organisation',
+        '/membership',
+        '/contact',
+        '/login',
+        '/register'
+    ];
+    
+    console.log(`[WEB] Adding specific COAZ navigation pages...`);
+    
+    // Convert relative URLs to absolute and add to discovery
+    specificPages.forEach(page => {
+        try {
+            const fullUrl = new URL(page, baseUrl).href;
+            discovered.add(fullUrl);
+            console.log(`[WEB] Target page: ${fullUrl}`);
+        } catch (error) {
+            console.log(`[WEB] Skipping invalid URL: ${page}`);
+        }
+    });
+    
+    // Also do automatic discovery for any additional pages
+    const maxPages = 25; // Increased limit
     const toVisit = [baseUrl];
-    const maxPages = 20; // Limit to prevent infinite crawling
+    const visitedForDiscovery = new Set([baseUrl]);
     
     try {
         while (toVisit.length > 0 && discovered.size < maxPages) {
             const currentUrl = toVisit.shift();
-            if (discovered.has(currentUrl)) continue;
+            if (visitedForDiscovery.has(currentUrl)) continue;
             
-            discovered.add(currentUrl);
-            console.log(`[WEB] Discovering links on: ${currentUrl}`);
+            visitedForDiscovery.add(currentUrl);
+            console.log(`[WEB] Auto-discovering links on: ${currentUrl}`);
             
             const response = await axios.get(currentUrl, {
-                timeout: 10000,
+                timeout: 15000,
                 headers: {
-                    'User-Agent': 'COAZ-Chatbot/1.0 (Website Crawler)'
+                    'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive Website Crawler)'
                 }
             });
 
             const $ = cheerio.load(response.data);
             
-            // Find all internal links
-            $('a[href]').each((index, element) => {
+            // Find all internal links including those in navigation menus
+            $('a[href], [href]').each((index, element) => {
                 let href = $(element).attr('href');
                 if (!href) return;
                 
@@ -962,18 +1000,24 @@ async function discoverWebsitePages(baseUrl) {
                     href = new URL(href, currentUrl).href;
                 }
                 
-                // Only include same-domain links
-                if (href.startsWith(baseUrl) && !discovered.has(href) && !href.includes('#')) {
-                    toVisit.push(href);
+                // Only include same-domain links, exclude anchors and external links
+                if (href.startsWith(baseUrl) && !href.includes('#') && !href.includes('mailto:') && !href.includes('tel:')) {
+                    discovered.add(href);
+                    if (!visitedForDiscovery.has(href) && toVisit.length < 10) {
+                        toVisit.push(href);
+                    }
                 }
             });
         }
         
-        return Array.from(discovered);
+        const finalPages = Array.from(discovered);
+        console.log(`[WEB] Discovery complete! Found ${finalPages.length} total pages to scrape`);
+        return finalPages;
         
     } catch (error) {
-        console.error(`[WEB] Error discovering pages: ${error.message}`);
-        return [baseUrl]; // Fallback to just the main page
+        console.error(`[WEB] Error during auto-discovery: ${error.message}`);
+        // Return at least the specific pages we know about
+        return Array.from(discovered);
     }
 }
 
@@ -1011,16 +1055,26 @@ async function scrapeMultiplePages(urls) {
 // Scrape a single page comprehensively
 async function scrapeSinglePage(url) {
     try {
-        console.log(`[WEB] Scraping page: ${url}`);
+        console.log(`[WEB] 📄 Scraping: ${url}`);
         
         const response = await axios.get(url, {
-            timeout: 15000,
+            timeout: 20000, // Increased timeout
             headers: {
-                'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive Scraper)'
+                'User-Agent': 'COAZ-Chatbot/1.0 (Comprehensive COAZ Website Scraper)',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive'
             }
         });
 
+        if (response.status !== 200) {
+            console.log(`[WEB] ❌ Failed to load ${url}: HTTP ${response.status}`);
+            return null;
+        }
+
         const $ = cheerio.load(response.data);
+        console.log(`[WEB] ✅ Successfully loaded ${url} (${response.data.length} characters)`);
         
         // Extract comprehensive page data
         const pageData = {
@@ -2131,7 +2185,7 @@ app.post("/api/test-rag", async (req, res) => {
 
     const PORT = config.port;
     
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
         logger.info(`🚀 COAZ Chatbot server running on port ${PORT}`);
         logger.info(`📊 Environment: ${config.nodeEnv}`);
         logger.info(`🤖 AI Provider: ${config.ai.provider}`);
@@ -2142,5 +2196,39 @@ app.post("/api/test-rag", async (req, res) => {
         console.log(`📄 Constitution: Loaded (${constitutionSections.length} sections)`);
         console.log(`🧠 RAG System: ${ragSystem ? 'Initialized' : 'Not available'}`);
         console.log(`=====================================\n`);
+        
+        // Start comprehensive website indexing on server startup
+        console.log(`\n🕷️  === STARTUP WEBSITE INDEXING ===`);
+        console.log(`🔍 Starting comprehensive crawl of ${config.webScraping.coazWebsite}`);
+        console.log(`⏱️  This may take a moment...`);
+        
+        try {
+            const startTime = Date.now();
+            const websiteData = await scrapeCoazWebsite();
+            const endTime = Date.now();
+            
+            if (websiteData) {
+                console.log(`\n✅ === WEBSITE INDEXING COMPLETE ===`);
+                console.log(`⏱️  Total time: ${((endTime - startTime) / 1000).toFixed(1)} seconds`);
+                console.log(`📊 Final Results:`);
+                console.log(`   📄 Total pages indexed: ${websiteData.totalPages}`);
+                console.log(`   📱 Phone numbers found: ${websiteData.contact.phones.length}`);
+                console.log(`   📧 Email addresses found: ${websiteData.contact.emails.length}`);
+                console.log(`   📍 Addresses found: ${websiteData.contact.addresses.length}`);
+                console.log(`   📝 Content sections: ${websiteData.pages.reduce((sum, page) => sum + (page.content?.length || 0), 0)}`);
+                console.log(`   🏷️  Headings extracted: ${websiteData.pages.reduce((sum, page) => sum + (page.headings?.length || 0), 0)}`);
+                console.log(`   🔗 Navigation links: ${websiteData.pages.reduce((sum, page) => sum + (page.navigation?.length || 0), 0)}`);
+                console.log(`\n🎉 COAZ Website is now fully indexed and ready for intelligent queries!`);
+                console.log(`💡 Users can now ask about services, programs, events, and more from the live website.`);
+                console.log(`=====================================\n`);
+            } else {
+                console.log(`\n❌ Website indexing failed - chatbot will use fallback responses`);
+                console.log(`=====================================\n`);
+            }
+        } catch (error) {
+            console.error(`\n❌ Error during startup website indexing: ${error.message}`);
+            console.log(`📝 Chatbot will continue with constitution and offline responses only`);
+            console.log(`=====================================\n`);
+        }
     });
 })();

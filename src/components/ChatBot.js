@@ -33,11 +33,12 @@ export const sendQuery = async (input, sessionId = null, useRag = true) => {
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     const [messages, setMessages] = useState([
         { 
             id: 1,
             sender: "bot", 
-            text: process.env.REACT_APP_CHATBOT_WELCOME_MESSAGE || "Hi 👋 I'm your assistant! Ask me anything about the constitution.",
+            text: process.env.REACT_APP_CHATBOT_WELCOME_MESSAGE || "Hi 👋 I'm your COAZ AI assistant! Ask me anything about the College of Anesthesiologists of Zambia.",
             timestamp: new Date()
         }
     ]);
@@ -51,12 +52,22 @@ const ChatBot = () => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    // Quick action suggestions
+    // Initialize chatbot readiness after a short delay
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsReady(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Quick action suggestions tailored for COAZ
     const quickActions = [
-        "What is the constitution about?",
+        "What is COAZ about?",
         "Tell me about membership",
-        "What are the objectives?",
-        "How to become a member?"
+        "How to join COAZ?",
+        "What services does COAZ offer?",
+        "Contact information",
+        "Training programs"
     ];
 
     // Scroll to bottom when new messages arrive
@@ -201,7 +212,7 @@ const ChatBot = () => {
     };
 
     const clearChat = () => {
-        const welcomeMessage = process.env.REACT_APP_CHATBOT_WELCOME_MESSAGE || "Hi 👋 I'm your assistant! Ask me anything about the constitution.";
+        const welcomeMessage = process.env.REACT_APP_CHATBOT_WELCOME_MESSAGE || "Hi 👋 I'm your COAZ AI assistant! Ask me anything about the College of Anesthesiologists of Zambia.";
         setMessages([{
             id: 1,
             sender: "bot", 
@@ -229,20 +240,33 @@ const ChatBot = () => {
     const chatHeight = isExpanded ? "max-h-96" : "max-h-64";
 
     return (
-        <>
-            {/* Floating Chat Button */}
+        <div className="chatbot-global">
+            {/* Floating Chat Button - High z-index to appear above all content */}
             <button
                 onClick={toggleChat}
-                className={`fixed bottom-6 right-6 bg-[rgb(0,175,240)] text-white p-4 rounded-full shadow-lg z-50 transition-all duration-300 hover:bg-[rgb(0,155,220)] hover:scale-110 ${
-                    isOpen ? 'rotate-90' : ''
-                }`}
+                className={`fixed bottom-6 right-6 bg-[rgb(0,175,240)] text-white p-4 rounded-full shadow-2xl z-[9999] transition-all duration-300 hover:bg-[rgb(0,155,220)] hover:scale-110 ${
+                    isReady ? 'chatbot-button-pulse' : ''
+                } ${isOpen ? 'rotate-90' : ''}`}
+                style={{
+                    boxShadow: '0 10px 25px rgba(0, 175, 240, 0.3)',
+                    zIndex: 9999,
+                    opacity: isReady ? 1 : 0.7
+                }}
+                title="COAZ AI Assistant - Ask me anything about COAZ!"
+                aria-label="Open COAZ AI Assistant"
             >
                 {isOpen ? <FaTimes size={20} /> : <FaRobot size={24} />}
+                
+                {/* Ready indicator */}
+                {isReady && !isOpen && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                )}
             </button>
 
-            {/* Chat Popup */}
+            {/* Chat Popup - Highest z-index to appear above all website content */}
             {isOpen && (
-                <div className={`fixed bottom-20 right-6 ${chatWidth} bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col z-50 transition-all duration-300 animate-slideUp`}>
+                <div className={`fixed bottom-20 right-6 ${chatWidth} bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col z-[9998] animate-slideUpFadeIn`}
+                     style={{ zIndex: 9998 }}>
                     {/* Header */}
                     <div className="bg-[rgb(0,175,240)] text-white p-3 rounded-t-2xl flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -409,14 +433,27 @@ const ChatBot = () => {
                             </div>
                         )}
 
-                        {/* Typing Indicator */}
-                        {process.env.REACT_APP_ENABLE_TYPING_INDICATOR !== 'false' && isTyping && (
-                            <div className="flex justify-start">
-                                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-2 shadow-sm">
-                                    <div className="flex space-x-1">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        {/* Professional Thinking Indicator */}
+                        {process.env.REACT_APP_ENABLE_TYPING_INDICATOR !== 'false' && (isLoading || isTyping) && (
+                            <div className="flex justify-start animate-fadeInUp">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-lg rounded-bl-sm px-4 py-3 shadow-md max-w-xs">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="flex space-x-1">
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium text-blue-800">
+                                                {isLoading ? 'COAZ Assistant is thinking...' : 'Preparing response...'}
+                                            </span>
+                                            <span className="text-xs text-blue-600">
+                                                {isLoading ? 'Searching knowledge base & website content' : 'Formatting information for you'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 w-full bg-blue-200 rounded-full h-1">
+                                        <div className="bg-blue-500 h-1 rounded-full animate-pulse transition-all duration-1000" style={{width: isLoading ? '60%' : '90%'}}></div>
                                     </div>
                                 </div>
                             </div>
@@ -431,7 +468,7 @@ const ChatBot = () => {
                             ref={inputRef}
                             type="text"
                             className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[rgb(0,175,240)] focus:border-transparent transition-all"
-                            placeholder={process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about the constitution..."}
+                            placeholder={process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about COAZ..."}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -462,7 +499,7 @@ const ChatBot = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 
