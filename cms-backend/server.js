@@ -817,19 +817,41 @@ try {
 
 // API Routes
 
-// Health check endpoint
+// Health check endpoint - simplified for fast response
 app.get('/api/health', (req, res) => {
-    const stats = aiSystem.getStats();
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        config: {
-            aiProvider: config.ai.provider,
-            webScrapingEnabled: config.webScraping.enabled
-        },
-        aiSystem: stats,
-        sessions: sessionManager.getStats()
-    });
+    try {
+        // Don't wait for AI system stats if it's still initializing
+        let aiStats = null;
+        try {
+            aiStats = aiSystem.getStats();
+        } catch (error) {
+            // AI system might still be initializing
+            aiStats = { status: 'initializing' };
+        }
+
+        res.json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            server: {
+                uptime: process.uptime(),
+                memory: process.memoryUsage(),
+                port: config.port
+            },
+            config: {
+                aiProvider: config.ai.provider,
+                webScrapingEnabled: config.webScraping.enabled
+            },
+            aiSystem: aiStats,
+            sessions: sessionManager.getStats()
+        });
+    } catch (error) {
+        console.error('[HEALTH] Health check error:', error.message);
+        res.status(500).json({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            error: error.message
+        });
+    }
 });
 
 // Main chat endpoint
@@ -985,23 +1007,44 @@ async function initializeSystem() {
     console.log('[INIT] Starting COAZ Simple Chatbot System...');
     console.log(`[INIT] AI Provider: ${config.ai.provider}`);
 
-    // Load constitution PDF
-    await loadConstitution();
+    try {
+        // Load constitution PDF
+        await loadConstitution();
 
-    // Load website data
-    await scrapeCoazWebsite();
+        // Load website data (with timeout to prevent hanging)
+        console.log('[INIT] Starting website scraping (background process)...');
+        const websitePromise = scrapeCoazWebsite();
+        
+        // Don't wait more than 30 seconds for website scraping
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Website scraping timeout')), 30000)
+        );
+        
+        try {
+            await Promise.race([websitePromise, timeoutPromise]);
+            console.log('[INIT] Website scraping completed successfully');
+        } catch (error) {
+            console.warn('[INIT] Website scraping timed out or failed:', error.message);
+            console.log('[INIT] Continuing with PDF-only content...');
+        }
 
-    console.log('[INIT] System initialization complete');
+        console.log('[INIT] System initialization complete');
+    } catch (error) {
+        console.error('[INIT] System initialization error:', error.message);
+        console.log('[INIT] Server will continue with basic functionality');
+    }
 }
 
 // Start server
-const server = app.listen(config.port, async () => {
+const server = app.listen(config.port, () => {
     console.log(`[SERVER] COAZ Simple Chatbot running on port ${config.port}`);
     console.log(`[SERVER] Environment: ${config.nodeEnv}`);
+    console.log('[SERVER] Server is ready to accept requests');
 
-    await initializeSystem();
-
-    console.log('[SERVER] Ready to accept requests');
+    // Initialize system in background (non-blocking)
+    initializeSystem().catch(error => {
+        console.error('[INIT] System initialization failed:', error.message);
+    });
 });
 
 // Graceful shutdown

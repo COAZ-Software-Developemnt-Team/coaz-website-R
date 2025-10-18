@@ -529,7 +529,7 @@ const ChatBot = () => {
                                                 {isLoading ? 'COAZ Assistant is thinking...' : 'Preparing response...'}
                                             </span>
                                             <span className="text-xs text-blue-600">
-                                                {isLoading ? 'Searching knowledge base & website content' : 'Formatting information for you'}
+                                                {isLoading ? 'Please wait a second..' : 'Formatting information for you'}
                                             </span>
                                         </div>
                                     </div>

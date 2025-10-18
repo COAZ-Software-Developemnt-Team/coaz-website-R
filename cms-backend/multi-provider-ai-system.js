@@ -296,13 +296,23 @@ class MultiProviderAISystem {
     // Build optimized prompt for AI Horde using the specified format
     buildAIHordePrompt(query, context) {
 
+        console.log(`[COMPINED] ❌ ${context}`);
+
         return `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ). 
         
-        Context: ${context.substring(0, 800)}
+        Context: ${context}
 
         Question: ${query}
 
         Please provide a helpful and accurate response:`;
+
+        // return `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ).
+        //
+        // Context: ${context.substring(0, 800)}
+        //
+        // Question: ${query}
+        //
+        // Please provide a helpful and accurate response:`;
     }
 
     // Try AI Horde endpoint with the specified request format
@@ -511,8 +521,9 @@ class MultiProviderAISystem {
             if (provider === 'ai_horde' && this.providers.ai_horde.working) {
                 try {
                     console.log(`[AI] Attempting AI Horde response...`);
-                    response = await this.generateAIHordeResponse(query, contextText);
-                    
+                    response = await this.generateAIHordeResponse(query, this.combinedKnowledge);
+                    // response = await this.generateAIHordeResponse(query, contextText);
+
                     if (response && response.length > 10) {
                         const processingTime = Date.now() - startTime;
                         return {
@@ -560,17 +571,107 @@ class MultiProviderAISystem {
         }
     }
 
-    // Clean model response
+    // Clean and format model response
     cleanModelResponse(text) {
         if (!text) return "I apologize, but I couldn't generate a response. Please try again.";
         
-        return text
+        // First clean the text
+        let cleanText = text
             .trim()
             .replace(/^(Assistant:|AI:|Response:)\s*/i, '')
-            .replace(/\n+/g, ' ')
-            .replace(/\s+/g, ' ')
             .replace(/<[^>]*>/g, '') // Remove HTML tags
             .trim();
+        
+        // Apply formatting
+        return this.formatResponse(cleanText);
+    }
+
+    // Format response with proper HTML formatting
+    formatResponse(text) {
+        if (!text) return text;
+        
+        // First, convert **bold** to <strong>bold</strong>
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Split text into paragraphs and process each
+        let paragraphs = text.split(/\n\s*\n/);
+        
+        paragraphs = paragraphs.map(paragraph => {
+            paragraph = paragraph.trim();
+            if (!paragraph) return '';
+            
+            // Check if this paragraph contains numbered items
+            const numberedItems = paragraph.match(/^\d+\.\s+<strong>.*?<\/strong>.*$/gm);
+            
+            if (numberedItems && numberedItems.length > 0) {
+                // Process numbered list
+                return paragraph.replace(/^(\d+)\.\s+<strong>(.*?)<\/strong>\s*(.*?)(?=\n\d+\.|$)/gm, (match, number, title, content) => {
+                    // Process bullet points in content
+                    let processedContent = content.trim();
+                    
+                    if (processedContent.includes('\n*')) {
+                        // Split by bullet points
+                        const parts = processedContent.split(/\n\*\s+/);
+                        const mainText = parts[0].trim();
+                        const bulletPoints = parts.slice(1).filter(item => item.trim());
+                        
+                        if (bulletPoints.length > 0) {
+                            const bulletList = bulletPoints
+                                .map(item => `<li style="margin-bottom: 5px;">${item.trim()}</li>`)
+                                .join('');
+                            
+                            processedContent = `${mainText}
+                                <ul style="margin: 8px 0; padding-left: 20px;">
+                                    ${bulletList}
+                                </ul>`;
+                        }
+                    }
+                    
+                    return `<div style="margin-bottom: 18px;">
+                        <div style="margin-bottom: 8px;">
+                            <strong style="color: #1e40af; font-size: 16px;">${number}. ${title}</strong>
+                        </div>
+                        <div style="margin-left: 20px; line-height: 1.5;">
+                            ${processedContent}
+                        </div>
+                    </div>`;
+                });
+            } else {
+                // Regular paragraph - handle standalone bullet points
+                if (paragraph.includes('\n*')) {
+                    const parts = paragraph.split(/\n\*\s+/);
+                    const mainText = parts[0].trim();
+                    const bulletPoints = parts.slice(1).filter(item => item.trim());
+                    
+                    if (bulletPoints.length > 0) {
+                        const bulletList = bulletPoints
+                            .map(item => `<li style="margin-bottom: 5px;">${item.trim()}</li>`)
+                            .join('');
+                        
+                        return `<div style="margin-bottom: 15px; line-height: 1.6;">
+                            ${mainText}
+                            <ul style="margin: 8px 0; padding-left: 20px;">
+                                ${bulletList}
+                            </ul>
+                        </div>`;
+                    }
+                }
+                
+                // Regular paragraph
+                return `<div style="margin-bottom: 15px; line-height: 1.6;">${paragraph}</div>`;
+            }
+        }).filter(p => p);
+        
+        // Join all paragraphs
+        text = paragraphs.join('');
+        
+        // Style contact information (email and phone)
+        text = text.replace(/(email\s+`[^`]+`|cell\s+`[^`]+`)/gi, '<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;">$1</span>');
+        
+        // Clean up any remaining line breaks and replace with proper spacing
+        text = text.replace(/\n/g, ' ');
+        
+        return text;
     }
 
     // Get system statistics
