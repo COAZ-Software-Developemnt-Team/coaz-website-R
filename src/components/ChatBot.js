@@ -20,7 +20,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ||
 
 export const sendQuery = async (input, sessionId = null, useRag = true) => {
     try {
-        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 30000;
+        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 300000;
         
         const response = await axios.post(
             `${API_BASE_URL}/api/chat`,

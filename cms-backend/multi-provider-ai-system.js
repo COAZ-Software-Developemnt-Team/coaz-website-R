@@ -14,16 +14,10 @@ class MultiProviderAISystem {
         // Available providers with their configurations
         this.providers = {
             ai_horde: {
-                name: 'AI Horde - Kobold',
-                url: 'https://koboldai.net/api/latest/generate',
-                type: 'kobold_horde',
+                name: 'AI Horde API',
+                url: 'https://aihorde.net/api/v2/generate/text/async',
+                type: 'horde_api',
                 working: true,
-                requiresAuth: false
-            },
-            transformers_js: {
-                name: 'Transformers.js Local',
-                type: 'transformers_js',
-                working: false, // Will be tested at runtime
                 requiresAuth: false
             },
             mock: {
@@ -271,55 +265,174 @@ class MultiProviderAISystem {
             .filter(piece => piece.score > 0);
     }
 
-    // Generate response using AI Horde
+    // AI Horde integration using the specific endpoint and format
     async generateAIHordeResponse(query, context) {
-        const url = this.providers.ai_horde.url;
-        
-        const prompt = `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ). 
-        
-Context: ${context.substring(0, 800)}
-
-Question: ${query}
-
-Please provide a helpful and accurate response:`;
-
-        const requestData = {
-            prompt: prompt,
-            max_length: 150,
-            temperature: 0.7,
-            rep_pen: 1.1,
-            top_p: 0.9
+        const endpoint = {
+            name: 'AI Horde API',
+            url: 'https://aihorde.net/api/v2/generate/text/async',
+            type: 'horde_api'
         };
 
-        const response = await axios.post(url, requestData, {
-            headers: { 'Content-Type': 'application/json' },
+        // Build enhanced prompt with context
+        const enhancedPrompt = this.buildAIHordePrompt(query, context);
+        
+        try {
+            console.log(`[AI] Trying ${endpoint.name}...`);
+            const response = await this.tryAIHordeEndpoint(endpoint, enhancedPrompt);
+            
+            if (response && response.length > 10) {
+                console.log(`[AI] ✅ Success with ${endpoint.name}`);
+                return response;
+            }
+            
+        } catch (error) {
+            console.log(`[AI] ❌ ${endpoint.name} failed: ${error.message}`);
+            throw error;
+        }
+        
+        throw new Error('AI Horde endpoint failed');
+    }
+
+    // Build optimized prompt for AI Horde using the specified format
+    buildAIHordePrompt(query, context) {
+
+        return `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ). 
+        
+        Context: ${context.substring(0, 800)}
+
+        Question: ${query}
+
+        Please provide a helpful and accurate response:`;
+    }
+
+    // Try AI Horde endpoint with the specified request format
+    async tryAIHordeEndpoint(endpoint, prompt) {
+        const requestData = {
+            "prompt": prompt,
+            "params": {
+                "n": 1,
+                "max_context_length": 3600,
+                "max_length": 420,
+                "rep_pen": 1.05,
+                "temperature": 0.75,
+                "top_p": 0.92,
+                "top_k": 100,
+                "top_a": 0,
+                "typical": 1,
+                "tfs": 1,
+                "rep_pen_range": 360,
+                "rep_pen_slope": 0.7,
+                "sampler_order": [6, 0, 1, 3, 4, 2, 5],
+                "use_default_badwordsids": false,
+                "stop_sequence": ["### Instruction:", "### Response:"],
+                "min_p": 0,
+                "dynatemp_range": 0,
+                "dynatemp_exponent": 1,
+                "smoothing_factor": 0,
+                "nsigma": 0
+            },
+            "models": [],
+            "workers": []
+        };
+
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Client-Agent': 'COAZ-Chatbot:1.0',
+            'apikey': '0000000000'  // Anonymous key for AI Horde
+        };
+
+        console.log('[AI] Sending request to AI Horde with data:', JSON.stringify(requestData, null, 2));
+
+        const response = await axios.post(endpoint.url, requestData, {
+            headers,
             timeout: this.config.timeout
         });
 
-        // AI Horde returns HTML, need to parse for actual response
-        if (response.data && typeof response.data === 'string') {
-            // Check for placeholder/template responses and reject them
-            if (response.data.includes('${') || 
-                response.data.includes('stash_image_placeholders') ||
-                response.data.includes('curr.msg')) {
-                throw new Error('AI Horde returned template/placeholder response');
+        return await this.parseAIHordeResponse(response, endpoint);
+    }
+
+    // Parse AI Horde async API response
+    async parseAIHordeResponse(response, endpoint) {
+        if (!response.data) {
+            throw new Error('No response data');
+        }
+
+        // Handle async API response - first response contains task ID
+        if (response.data.id) {
+            const taskId = response.data.id;
+            console.log(`[AI] Got task ID: ${taskId}, waiting for completion...`);
+            
+            // Poll for completion
+            return await this.pollAIHordeResult(taskId);
+        }
+
+        // Handle direct response (shouldn't happen with async endpoint)
+        let responseText = '';
+        if (response.data.generations && response.data.generations[0]) {
+            responseText = response.data.generations[0].text;
+        } else if (response.data.text) {
+            responseText = response.data.text;
+        } else if (typeof response.data === 'string') {
+            responseText = response.data;
+        }
+
+        // Clean up response
+        if (responseText && typeof responseText === 'string') {
+            // Check for template/placeholder content
+            if (responseText.includes('${') || 
+                responseText.includes('stash_image_placeholders') ||
+                responseText.includes('curr.msg') ||
+                responseText.includes('<script>') ||
+                responseText.includes('function(')) {
+                throw new Error('Response contains template/code content');
             }
+
+            // Clean and validate
+            responseText = this.cleanModelResponse(responseText);
             
-            // Look for generated text in the response
-            const textMatch = response.data.match(/<div[^>]*class="[^"]*output[^"]*"[^>]*>(.*?)<\/div>/s) ||
-                            response.data.match(/<textarea[^>]*>(.*?)<\/textarea>/s) ||
-                            response.data.match(/generated[^>]*>([^<]+)</i) ||
-                            response.data.match(/"generated_text":\s*"([^"]+)"/);
-            
-            if (textMatch && textMatch[1] && 
-                !textMatch[1].includes('${') && 
-                !textMatch[1].includes('stash_image_placeholders')) {
-                return this.cleanModelResponse(textMatch[1]);
+            if (responseText.length < 10) {
+                throw new Error('Response too short');
+            }
+
+            return responseText;
+        }
+
+        throw new Error('Could not parse response text');
+    }
+
+    // Poll AI Horde for result
+    async pollAIHordeResult(taskId, maxAttempts = 50) {
+        const checkUrl = `https://aihorde.net/api/v2/generate/text/status/${taskId}`;
+        
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                
+                const statusResponse = await axios.get(checkUrl, {
+                    timeout: 10000
+                });
+                
+                if (statusResponse.data.done) {
+                    if (statusResponse.data.generations && statusResponse.data.generations.length > 0) {
+                        const generatedText = statusResponse.data.generations[0].text;
+                        console.log(`[AI] Task completed after ${attempt + 1} attempts`);
+                        return this.cleanModelResponse(generatedText);
+                    } else {
+                        throw new Error('No generations in completed task');
+                    }
+                } else {
+                    console.log(`[AI] Task ${taskId} still processing... (attempt ${attempt + 1}/${maxAttempts})`);
+                }
+                
+            } catch (error) {
+                console.warn(`[AI] Polling attempt ${attempt + 1} failed:`, error.message);
+                if (attempt === maxAttempts - 1) {
+                    throw new Error(`Task polling failed after ${maxAttempts} attempts`);
+                }
             }
         }
         
-        // If we can't parse the response properly, throw error to use fallback
-        throw new Error('Could not parse AI Horde response or got template content');
+        throw new Error('Task did not complete within timeout period');
     }
 
     // Generate mock response based on patterns

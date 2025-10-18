@@ -12,3 +12,6 @@
 {"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:10.230Z"}
 {"level":"info","message":"Created new session: session_1760783817522_upqw88qhc","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:13:41.002Z"}
 {"level":"info","message":"Created new session: session_1760783817522_upqw88qhc","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:17:34.869Z"}
+{"level":"info","message":"Created new session: test","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:21:06.256Z"}
+{"level":"info","message":"Created new session: session_1760791420060_cdsn9ztd4","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:47:57.202Z"}
+{"level":"info","message":"Created new session: session_1760794306681_utsrjg4z4","service":"coaz-simple-chatbot","timestamp":"2025-10-18T13:31:51.725Z"}

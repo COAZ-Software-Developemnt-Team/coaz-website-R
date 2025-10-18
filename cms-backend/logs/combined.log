@@ -443,3 +443,12 @@
 {"level":"info","message":"POST /api/chat - 200 - 12ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:01:08.664Z"}
 {"level":"info","message":"POST /api/chat - 200 - 7ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:01:19.473Z"}
 {"level":"info","message":"POST /api/chat - 200 - 18ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:01:35.096Z"}
+{"level":"info","message":"Created new session: session_1760783817522_upqw88qhc","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:33:31.239Z"}
+{"level":"info","message":"POST /api/chat - 200 - 23ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:33:31.253Z"}
+{"level":"info","message":"POST /api/chat - 200 - 19ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:34:03.496Z"}
+{"level":"info","message":"POST /api/chat - 200 - 10ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:37:49.713Z"}
+{"level":"info","message":"POST /api/chat - 200 - 4ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:38:22.812Z"}
+{"level":"info","message":"Created new session: session_1760791136545_ra6xs3xri","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:39:22.749Z"}
+{"level":"info","message":"POST /api/chat - 200 - 9ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:39:22.755Z"}
+{"level":"info","message":"POST /api/chat - 200 - 20ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:39:30.194Z"}
+{"level":"info","message":"POST /api/chat - 200 - 5ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:40:00.024Z"}
