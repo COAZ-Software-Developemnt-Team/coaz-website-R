@@ -68,7 +68,7 @@ const ChatBot = () => {
     // Retry failed message
     const retryFailedMessage = async () => {
         if (!failedMessage) return;
-        
+
         console.log('Retrying failed message:', failedMessage.text);
         setFailedMessage(null); // Clear failed message
         await handleSend(failedMessage.text, failedMessage.sessionId, failedMessage.useRag);
@@ -240,17 +240,48 @@ const ChatBot = () => {
             const response = await sendQuery(message, sessionId, useRag);
             console.log("Chatbot API response:", response);
 
-            const botMessage = {
-                id: Date.now() + 1,
-                sender: "bot",
-                text: response.text || response.answer || "I couldn't find relevant info in the constitution.",
-                timestamp: new Date(),
-                responseType: response.responseType,
-                ragMetadata: response.ragMetadata,
-                metadata: response.metadata // Include model and provider info
-            };
+            // Check if response contains an error message from sendQuery
+            const isServerError = response.answer && (
+                response.answer.includes("Sorry, I couldn't reach the server") ||
+                response.answer.includes("couldn't reach the server") ||
+                response.answer === (process.env.REACT_APP_CHATBOT_ERROR_MESSAGE || "Sorry, I couldn't reach the server.")
+            );
 
-            setMessages(prev => [...prev, botMessage]);
+            if (isServerError) {
+                // Store the failed message for retry
+                setFailedMessage({
+                    text: message,
+                    sessionId: sessionId,
+                    useRag: useRag,
+                    timestamp: new Date()
+                });
+
+                const errorMessage = {
+                    id: Date.now() + 1,
+                    sender: "bot",
+                    text: "❌ " + response.answer,
+                    timestamp: new Date(),
+                    isError: true,
+                    showRetry: true
+                };
+                setMessages(prev => [...prev, errorMessage]);
+            } else {
+                // Normal successful response
+                const botMessage = {
+                    id: Date.now() + 1,
+                    sender: "bot",
+                    text: response.text || response.answer || "I couldn't find relevant info in the constitution.",
+                    timestamp: new Date(),
+                    responseType: response.responseType,
+                    ragMetadata: response.ragMetadata,
+                    metadata: response.metadata // Include model and provider info
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+                
+                // Clear failed message on successful response
+                setFailedMessage(null);
+            }
         } catch (err) {
             // Store the failed message for retry
             setFailedMessage({

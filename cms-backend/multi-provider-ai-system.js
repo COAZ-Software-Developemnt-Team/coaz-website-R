@@ -362,7 +362,7 @@ class MultiProviderAISystem {
             'apikey': '0000000000'  // Anonymous key for AI Horde
         };
 
-        console.log('[AI] Sending request to AI Horde with data:', JSON.stringify(requestData, null, 2));
+        // console.log('[AI] Sending request to AI Horde with data:', JSON.stringify(requestData, null, 2));
 
         const response = await axios.post(endpoint.url, requestData, {
             headers,
@@ -454,7 +454,7 @@ class MultiProviderAISystem {
                         const generatedText = statusResponse.data.generations[0].text;
                         const totalTime = Math.round((Date.now() - startTime) / 1000);
                         console.log(`[AI] ✅ Task completed successfully after ${attempt + 1} attempts (${totalTime}s total)`);
-                        console.log(`[AI] ✅ ${generatedText}`);
+                        // console.log(`[AI] ✅ ${generatedText}`);
                         return this.cleanModelResponse(generatedText);
                     } else {
                         throw new Error('No generations in completed task');
