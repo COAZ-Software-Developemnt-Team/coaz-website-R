@@ -31,7 +31,7 @@ const config = {
     ai: {
         provider: process.env.AI_PROVIDER || 'ai_horde',
         fallbackToMock: process.env.AI_FALLBACK_TO_MOCK !== 'false',
-        timeout: parseInt(process.env.AI_TIMEOUT) || 15000,
+        timeout: parseInt(process.env.AI_TIMEOUT) || 120000, // Increased to 2 minutes for AI Horde polling
         maxRetries: parseInt(process.env.AI_MAX_RETRIES) || 2
     },
 

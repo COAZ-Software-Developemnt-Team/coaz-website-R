@@ -45,6 +45,7 @@ const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isReady, setIsReady] = useState(false);
+    const [serverStatus, setServerStatus] = useState('checking'); // 'checking', 'ready', 'offline'
     const [messages, setMessages] = useState([
         { 
             id: 1,
@@ -63,12 +64,48 @@ const ChatBot = () => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    // Initialize chatbot readiness after a short delay
+    // Check server health and readiness
+    const checkServerHealth = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/api/health`, {
+                timeout: 5000 // 5 second timeout for health check
+            });
+            
+            if (response.status === 200 && response.data.status === 'healthy') {
+                setServerStatus('ready');
+                setIsReady(true);
+                if (process.env.REACT_APP_ENABLE_CONSOLE_LOGS !== 'false') {
+                    console.log('[ChatBot] Server is ready and healthy');
+                }
+            } else {
+                setServerStatus('offline');
+                setIsReady(false);
+            }
+        } catch (error) {
+            setServerStatus('offline');
+            setIsReady(false);
+            if (process.env.REACT_APP_ENABLE_CONSOLE_LOGS !== 'false') {
+                console.log('[ChatBot] Server health check failed:', error.message);
+            }
+        }
+    };
+
+    // Initialize server health check
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsReady(true);
+        // Initial check after a short delay to allow page to load
+        const initialTimer = setTimeout(() => {
+            checkServerHealth();
         }, 1000);
-        return () => clearTimeout(timer);
+
+        // Periodic health checks every 30 seconds
+        const healthCheckInterval = setInterval(() => {
+            checkServerHealth();
+        }, 30000);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(healthCheckInterval);
+        };
     }, []);
 
     // Quick action suggestions tailored for COAZ
@@ -158,6 +195,18 @@ const ChatBot = () => {
 
     const handleSend = async (message = input) => {
         if (!message.trim()) return;
+        
+        // Check server status before sending
+        if (serverStatus !== 'ready') {
+            const offlineMessage = {
+                id: Date.now(),
+                sender: "bot",
+                text: "❌ Server is currently offline. Please wait for the server to come back online or try refreshing the page.",
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, offlineMessage]);
+            return;
+        }
 
         const userMessage = {
             id: Date.now(),
@@ -268,9 +317,19 @@ const ChatBot = () => {
             >
                 {isOpen ? <FaTimes size={20} /> : <FaRobot size={24} />}
                 
-                {/* Ready indicator */}
-                {isReady && !isOpen && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                {/* Server status indicator */}
+                {!isOpen && (
+                    <>
+                        {serverStatus === 'ready' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" title="Server is ready"></div>
+                        )}
+                        {serverStatus === 'checking' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse" title="Checking server status..."></div>
+                        )}
+                        {serverStatus === 'offline' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" title="Server is offline"></div>
+                        )}
+                    </>
                 )}
             </button>
 
@@ -288,11 +347,22 @@ const ChatBot = () => {
                             <div>
                                 <span className="font-bold">AI Assistant</span>
                                 <div className="text-xs opacity-75">
-                                    {useRag ? "RAG Mode" : "Search Mode"}
+                                    {serverStatus === 'ready' && (useRag ? "RAG Mode" : "Search Mode")}
+                                    {serverStatus === 'checking' && "Connecting..."}
+                                    {serverStatus === 'offline' && "Server Offline"}
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                            {serverStatus === 'offline' && (
+                                <button
+                                    onClick={checkServerHealth}
+                                    className="hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors text-xs px-2 py-1"
+                                    title="Retry connection"
+                                >
+                                    Retry
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowSettings(!showSettings)}
                                 className="hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
@@ -479,7 +549,13 @@ const ChatBot = () => {
                             ref={inputRef}
                             type="text"
                             className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[rgb(0,175,240)] focus:border-transparent transition-all"
-                            placeholder={process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about COAZ..."}
+                            placeholder={
+                                serverStatus === 'ready' 
+                                    ? (process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about COAZ...")
+                                    : serverStatus === 'checking'
+                                    ? "Connecting to server..."
+                                    : "Server is offline"
+                            }
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -497,12 +573,12 @@ const ChatBot = () => {
                                     }
                                 }, 10);
                             }}
-                            disabled={isLoading}
+                            disabled={isLoading || serverStatus !== 'ready'}
                             autoFocus={isOpen}
                         />
                         <button
                             onClick={() => handleSend()}
-                            disabled={isLoading || !input.trim()}
+                            disabled={isLoading || !input.trim() || serverStatus !== 'ready'}
                             className="ml-3 bg-[rgb(0,175,240)] text-white p-2 rounded-full hover:bg-[rgb(0,155,220)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
                         >
                             <FaPaperPlane size={16} />

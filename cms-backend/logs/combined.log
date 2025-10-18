@@ -452,3 +452,5 @@
 {"level":"info","message":"POST /api/chat - 200 - 9ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:39:22.755Z"}
 {"level":"info","message":"POST /api/chat - 200 - 20ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:39:30.194Z"}
 {"level":"info","message":"POST /api/chat - 200 - 5ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:40:00.024Z"}
+{"level":"info","message":"Created new session: test_session_1760824141982","service":"coaz-simple-chatbot","timestamp":"2025-10-18T21:49:02.152Z"}
+{"level":"info","message":"POST /api/chat - 200 - 4205ms - ::1","service":"coaz-simple-chatbot","timestamp":"2025-10-18T21:49:06.347Z"}

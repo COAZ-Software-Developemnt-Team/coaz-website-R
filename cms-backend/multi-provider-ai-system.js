@@ -6,7 +6,7 @@ class MultiProviderAISystem {
         this.config = {
             primaryProvider: config.primaryProvider || 'ai_horde',
             fallbackToMock: config.fallbackToMock !== false,
-            timeout: config.timeout || 15000,
+            timeout: config.timeout || 120000, // Increased to 2 minutes to allow for AI Horde polling
             maxRetries: config.maxRetries || 2,
             ...config
         };
@@ -345,7 +345,7 @@ class MultiProviderAISystem {
 
         const response = await axios.post(endpoint.url, requestData, {
             headers,
-            timeout: this.config.timeout
+            timeout: 30000 // 30 seconds for initial submission - separate from polling timeout
         });
 
         return await this.parseAIHordeResponse(response, endpoint);
@@ -403,36 +403,66 @@ class MultiProviderAISystem {
     // Poll AI Horde for result
     async pollAIHordeResult(taskId, maxAttempts = 50) {
         const checkUrl = `https://aihorde.net/api/v2/generate/text/status/${taskId}`;
+        const startTime = Date.now();
+        
+        console.log(`[AI] Starting polling for task ${taskId} - will wait up to ${maxAttempts * 2} seconds`);
         
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                // Wait before each check (except first)
+                if (attempt > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                }
+                
+                const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+                console.log(`[AI] Checking task ${taskId} status... (attempt ${attempt + 1}/${maxAttempts}, ${elapsedSeconds}s elapsed)`);
                 
                 const statusResponse = await axios.get(checkUrl, {
-                    timeout: 10000
+                    timeout: 15000 // 15 seconds for status check
+                });
+                
+                console.log(`[AI] Status response:`, {
+                    done: statusResponse.data.done,
+                    waiting: statusResponse.data.waiting || 0,
+                    processing: statusResponse.data.processing || 0,
+                    queue_position: statusResponse.data.queue_position || 0
                 });
                 
                 if (statusResponse.data.done) {
                     if (statusResponse.data.generations && statusResponse.data.generations.length > 0) {
                         const generatedText = statusResponse.data.generations[0].text;
-                        console.log(`[AI] Task completed after ${attempt + 1} attempts`);
+                        const totalTime = Math.round((Date.now() - startTime) / 1000);
+                        console.log(`[AI] ✅ Task completed successfully after ${attempt + 1} attempts (${totalTime}s total)`);
+                        console.log(`[AI] ✅ ${generatedText}`);
                         return this.cleanModelResponse(generatedText);
                     } else {
                         throw new Error('No generations in completed task');
                     }
                 } else {
-                    console.log(`[AI] Task ${taskId} still processing... (attempt ${attempt + 1}/${maxAttempts})`);
+                    // Show queue position if available
+                    const queueInfo = statusResponse.data.queue_position ? 
+                        ` (queue position: ${statusResponse.data.queue_position})` : '';
+                    console.log(`[AI] Task ${taskId} still processing...${queueInfo}`);
                 }
                 
             } catch (error) {
-                console.warn(`[AI] Polling attempt ${attempt + 1} failed:`, error.message);
+                const isTimeoutError = error.code === 'ECONNABORTED' || error.message.includes('timeout');
+                console.warn(`[AI] Polling attempt ${attempt + 1} failed: ${error.message}${isTimeoutError ? ' (network timeout)' : ''}`);
+                
                 if (attempt === maxAttempts - 1) {
-                    throw new Error(`Task polling failed after ${maxAttempts} attempts`);
+                    throw new Error(`Task polling failed after ${maxAttempts} attempts. Last error: ${error.message}`);
+                }
+                
+                // On timeout errors, wait a bit longer before retrying
+                if (isTimeoutError) {
+                    console.log(`[AI] Network timeout, waiting extra 3 seconds before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
                 }
             }
         }
         
-        throw new Error('Task did not complete within timeout period');
+        const totalTime = Math.round((Date.now() - startTime) / 1000);
+        throw new Error(`Task did not complete within timeout period (${totalTime}s, ${maxAttempts} attempts)`);
     }
 
     // Generate mock response based on patterns
