@@ -303,14 +303,6 @@ class MultiProviderAISystem {
         Question: ${query}
 
         Please provide a helpful and accurate response:`;
-
-        // return `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ).
-        //
-        // Context: ${context.substring(0, 800)}
-        //
-        // Question: ${query}
-        //
-        // Please provide a helpful and accurate response:`;
     }
 
     // Try AI Horde endpoint with the specified request format
@@ -339,7 +331,28 @@ class MultiProviderAISystem {
                 "smoothing_factor": 0,
                 "nsigma": 0
             },
-            "models": [],
+            "models": [
+                "deepseek-ai/DeepSeek-V3",
+                "koboldcpp/C4.1-Broken-Tutu-24B.i1-IQ4_XS",
+                "koboldcpp/Cydonia-24B-v4.2.0",
+                "koboldcpp/Gemmasutra-Mini-2B-v1",
+                "koboldcpp/Hermes-3-Llama-3.2-3B.Q6_K",
+                "koboldcpp/Hermes-3-Llama-3.2-3B.Q6_K",
+                "koboldcpp/L3-8B-Lunaris-v1",
+                "koboldcpp/L3-8B-Stheno-v3.2",
+                "koboldcpp/LLaMA2-13B-Tiefighter.Q4_0",
+                "koboldcpp/LLaMA2-13B-Tiefighter.Q4_0",
+                "koboldcpp/Llama-3.1-8B-GRA-WizardLM.i1-Q4_K_M",
+                "koboldcpp/Llama-3.1-8B-GRA-WizardLM.i1-Q4_K_M",
+                "koboldcpp/Llama-3-Lumimaid-8B-v0.1",
+                "koboldcpp/Llama-3-Lumimaid-8B-v0.1",
+                "koboldcpp/mini-magnum-12b-v1.1",
+                "koboldcpp/mini-magnum-12b-v1.1.i1-Q4_K_M",
+                "koboldcpp/mistral.22b.cydonia-v1.2.gguf_v2.q4_k_m",
+                "koboldcpp/mistral.22b.cydonia-v1.2.gguf_v2.q4_k_m",
+                "koboldcpp/Skyfall-31B-v4",
+                "tabbyAPI/Behemoth-ReduX-123B-v1.1-EXL3_4.25bpw_H6"
+            ],
             "workers": []
         };
 
@@ -593,23 +606,37 @@ class MultiProviderAISystem {
         
         let cleanedText = text;
         
-        // Step 1: Remove the "Remember to keep your responses..." sections
+        // Step 1: Remove everything from the first PDF section onwards
+        cleanedText = cleanedText.replace(/\s*\[PDF: Section \d+\].*$/gis, '');
+        
+        // Step 2: Remove "By becoming a member" and everything after it
+        cleanedText = cleanedText.replace(/\s*By becoming a member.*$/gis, '');
+        
+        // Step 3: Remove the "Remember to keep your responses..." sections
         cleanedText = cleanedText.replace(/Remember to keep your responses concise.*?Happy assisting!/gis, '');
         
-        // Step 2: Remove parenthetical notes
+        // Step 4: Remove parenthetical notes
         cleanedText = cleanedText.replace(/\(Please note that.*?\)/gi, '');
         
-        // Step 3: Remove everything from "---Please find the next task below:" onwards
+        // Step 5: Remove everything from "---Please find the next task below:" onwards
         cleanedText = cleanedText.replace(/---\s*Please find the next task below:.*$/gis, '');
         
-        // Step 4: Remove everything from "Please find the next task below:" onwards (without ---)
+        // Step 6: Remove everything from "Please find the next task below:" onwards (without ---)
         cleanedText = cleanedText.replace(/Please find the next task below:.*$/gis, '');
         
-        // Step 5: Remove Question/Answer training sections
+        // Step 7: Remove Question/Answer training sections
         cleanedText = cleanedText.replace(/---\s*Question:.*?Answer:.*?(?=---|\n\n|$)/gis, '');
         
-        // Step 6: Remove standalone separator lines
+        // Step 8: Remove standalone separator lines
         cleanedText = cleanedText.replace(/^\s*---\s*$/gm, '');
+        
+        // Step 9: Clean up any remaining PDF references or incomplete sentences
+        cleanedText = cleanedText.replace(/\s*\[PDF:.*$/gi, '');
+        cleanedText = cleanedText.replace(/\s*\[\[PDF:.*$/gi, ''); // Handle double brackets
+        
+        // Step 10: Remove generic closing statements that appear in training data
+        cleanedText = cleanedText.replace(/\s*They're here to assist you every step of the way\..*$/gis, '. They\'re here to assist you every step of the way.');
+        cleanedText = cleanedText.replace(/\s*You can contact.*?for more information\.?.*$/gis, '');
         
         // Step 7: Extract only the first paragraph if response contains training artifacts
         if (cleanedText.includes('Question:') || cleanedText.includes('Answer:') || cleanedText.includes('---')) {
@@ -668,25 +695,32 @@ class MultiProviderAISystem {
         // First, convert **bold** to <strong>bold</strong>
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         
-        // Split text into paragraphs and process each
-        let paragraphs = text.split(/\n\s*\n/);
+        // Check if this is a numbered list (even without bold headers)
+        const hasNumberedList = /\b\d+\.\s+/.test(text.trim()) && text.includes('1.') && text.includes('2.');
         
-        paragraphs = paragraphs.map(paragraph => {
-            paragraph = paragraph.trim();
-            if (!paragraph) return '';
+        if (hasNumberedList) {
+            // Process as numbered list
+            // First, extract the intro text before the first number
+            const introMatch = text.match(/^(.*?)(\d+\.\s+.*)/s);
+            let introText = '';
+            let listText = text;
             
-            // Check if this paragraph contains numbered items
-            const numberedItems = paragraph.match(/^\d+\.\s+<strong>.*?<\/strong>.*$/gm);
+            if (introMatch) {
+                introText = introMatch[1].trim();
+                listText = introMatch[2];
+            }
             
-            if (numberedItems && numberedItems.length > 0) {
-                // Process numbered list
-                return paragraph.replace(/^(\d+)\.\s+<strong>(.*?)<\/strong>\s*(.*?)(?=\n\d+\.|$)/gm, (match, number, title, content) => {
-                    // Process bullet points in content
+            const numberedItems = listText.split(/(?=\d+\.\s+)/).filter(item => item.trim());
+            
+            const formattedItems = numberedItems.map(item => {
+                const match = item.match(/^(\d+)\.\s+(.*?)$/s);
+                if (match) {
+                    const [, number, content] = match;
                     let processedContent = content.trim();
                     
-                    if (processedContent.includes('\n*')) {
-                        // Split by bullet points
-                        const parts = processedContent.split(/\n\*\s+/);
+                    // Handle bullet points within numbered items
+                    if (processedContent.includes('\n*') || processedContent.includes('*')) {
+                        const parts = processedContent.split(/\n?\*\s+/);
                         const mainText = parts[0].trim();
                         const bulletPoints = parts.slice(1).filter(item => item.trim());
                         
@@ -695,26 +729,43 @@ class MultiProviderAISystem {
                                 .map(item => `<li style="margin-bottom: 5px;">${item.trim()}</li>`)
                                 .join('');
                             
-                            processedContent = `${mainText}
-                                <ul style="margin: 8px 0; padding-left: 20px;">
-                                    ${bulletList}
-                                </ul>`;
+                            processedContent = mainText ? 
+                                `${mainText}<ul style="margin: 8px 0; padding-left: 20px;">${bulletList}</ul>` :
+                                `<ul style="margin: 8px 0; padding-left: 20px;">${bulletList}</ul>`;
                         }
                     }
                     
-                    return `<div style="margin-bottom: 18px;">
-                        <div style="margin-bottom: 8px;">
-                            <strong style="color: #1e40af; font-size: 16px;">${number}. ${title}</strong>
+                    return `<div style="margin-bottom: 16px;">
+                        <div style="margin-bottom: 6px;">
+                            <strong style="color: #1e40af; font-size: 16px;">${number}.</strong>
                         </div>
-                        <div style="margin-left: 20px; line-height: 1.5;">
+                        <div style="margin-left: 20px; line-height: 1.6;">
                             ${processedContent}
                         </div>
                     </div>`;
-                });
-            } else {
-                // Regular paragraph - handle standalone bullet points
-                if (paragraph.includes('\n*')) {
-                    const parts = paragraph.split(/\n\*\s+/);
+                }
+                return '';
+            }).filter(item => item);
+            
+            // Combine intro text with formatted list
+            let result = '';
+            if (introText) {
+                result += `<div style="margin-bottom: 15px; line-height: 1.6;">${introText}</div>`;
+            }
+            result += formattedItems.join('');
+            
+            return result;
+        } else {
+            // Process as regular text with potential paragraphs
+            let paragraphs = text.split(/\n\s*\n/);
+            
+            paragraphs = paragraphs.map(paragraph => {
+                paragraph = paragraph.trim();
+                if (!paragraph) return '';
+                
+                // Handle standalone bullet points
+                if (paragraph.includes('\n*') || paragraph.includes('*')) {
+                    const parts = paragraph.split(/\n?\*\s+/);
                     const mainText = parts[0].trim();
                     const bulletPoints = parts.slice(1).filter(item => item.trim());
                     
@@ -734,11 +785,11 @@ class MultiProviderAISystem {
                 
                 // Regular paragraph
                 return `<div style="margin-bottom: 15px; line-height: 1.6;">${paragraph}</div>`;
-            }
-        }).filter(p => p);
-        
-        // Join all paragraphs
-        text = paragraphs.join('');
+            }).filter(p => p);
+            
+            // Join all paragraphs
+            text = paragraphs.join('');
+        }
         
         // Style contact information (email and phone)
         text = text.replace(/(email\s+`[^`]+`|cell\s+`[^`]+`)/gi, '<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px;">$1</span>');

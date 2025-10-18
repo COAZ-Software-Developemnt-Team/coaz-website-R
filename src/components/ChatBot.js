@@ -20,7 +20,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ||
 
 export const sendQuery = async (input, sessionId = null, useRag = true) => {
     try {
-        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 300000;
+        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 600000; // 10 minutes default
         
         const response = await axios.post(
             `${API_BASE_URL}/api/chat`,
@@ -46,6 +46,7 @@ const ChatBot = () => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isReady, setIsReady] = useState(false);
     const [serverStatus, setServerStatus] = useState('checking'); // 'checking', 'ready', 'offline'
+    const [failedMessage, setFailedMessage] = useState(null); // Store failed message for retry
     const [messages, setMessages] = useState([
         { 
             id: 1,
@@ -63,6 +64,15 @@ const ChatBot = () => {
     const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Retry failed message
+    const retryFailedMessage = async () => {
+        if (!failedMessage) return;
+        
+        console.log('Retrying failed message:', failedMessage.text);
+        setFailedMessage(null); // Clear failed message
+        await handleSend(failedMessage.text, failedMessage.sessionId, failedMessage.useRag);
+    };
 
     // Check server health and readiness
     const checkServerHealth = async () => {
@@ -236,16 +246,32 @@ const ChatBot = () => {
                 text: response.text || response.answer || "I couldn't find relevant info in the constitution.",
                 timestamp: new Date(),
                 responseType: response.responseType,
-                ragMetadata: response.ragMetadata
+                ragMetadata: response.ragMetadata,
+                metadata: response.metadata // Include model and provider info
             };
 
             setMessages(prev => [...prev, botMessage]);
         } catch (err) {
+            // Store the failed message for retry
+            setFailedMessage({
+                text: message,
+                sessionId: sessionId,
+                useRag: useRag,
+                timestamp: new Date()
+            });
+
+            const isTimeoutError = err.code === 'ECONNABORTED' || err.message.includes('timeout');
+            const errorText = isTimeoutError 
+                ? "⏰ Request timed out. The server is taking longer than expected to respond."
+                : `❌ ${err.response?.data?.message || err.message || 'Sorry, I couldn\'t reach the server.'}`;
+
             const errorMessage = {
                 id: Date.now() + 1,
                 sender: "bot",
-                text: `❌ Error: ${err.message}`,
-                timestamp: new Date()
+                text: errorText,
+                timestamp: new Date(),
+                isError: true,
+                showRetry: true
             };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
@@ -467,6 +493,24 @@ const ChatBot = () => {
                                             </div>
                                         )}
                                         
+                                        {/* Subtle Model Indicator */}
+                                        {msg.sender === 'bot' && msg.metadata && (
+                                            <div className="mt-2 text-xs text-gray-400 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-between">
+                                                <div className="flex items-center space-x-1">
+                                                    <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                                                    <span className="font-mono text-[10px]">
+                                                        {msg.metadata.provider === 'ai_horde' ? 'AI Horde' : msg.metadata.provider}
+                                                        {msg.metadata.model && ` • ${msg.metadata.model}`}
+                                                    </span>
+                                                </div>
+                                                {msg.metadata.processingTime && (
+                                                    <span className="text-[10px] font-mono opacity-50">
+                                                        {msg.metadata.processingTime}ms
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        
                                         {/* Response Type Indicator */}
                                         {msg.responseType && msg.sender === 'bot' && (
                                             <div className="mt-1 text-xs text-gray-400">
@@ -520,21 +564,36 @@ const ChatBot = () => {
                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-lg rounded-bl-sm px-4 py-3 shadow-md max-w-xs">
                                     <div className="flex items-center space-x-3">
                                         <div className="flex space-x-1">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0s'
+                                            }}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0.16s'
+                                            }}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0.32s'
+                                            }}></div>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-blue-800">
-                                                {isLoading ? 'COAZ Assistant is thinking...' : 'Preparing response...'}
+                                                {isLoading ? 'COAZ Assistant is thinking' : 'Preparing response...'}
+                                                {isLoading && <span className="animate-pulse">...</span>}
                                             </span>
                                             <span className="text-xs text-blue-600">
-                                                {isLoading ? 'Please wait a second..' : 'Formatting information for you'}
+                                                {isLoading ? 'Processing your request, please wait ...' : 'Formatting information for you'}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="mt-2 w-full bg-blue-200 rounded-full h-1">
-                                        <div className="bg-blue-500 h-1 rounded-full animate-pulse transition-all duration-1000" style={{width: isLoading ? '60%' : '90%'}}></div>
+                                    <div className="mt-2 w-full bg-blue-200 rounded-full h-1 overflow-hidden">
+                                        <div className={`bg-blue-500 h-1 rounded-full transition-all duration-1000 ${
+                                            isLoading ? 'animate-pulse' : ''
+                                        }`} style={{
+                                            width: isLoading ? '60%' : '90%',
+                                            animation: isLoading ? 'loading-bar 3s infinite ease-in-out' : undefined
+                                        }}></div>
                                     </div>
                                 </div>
                             </div>
