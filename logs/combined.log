@@ -1,0 +1,14 @@
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:17.681Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:17.685Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:18.648Z"}
+{"level":"info","message":"📊 Environment: development","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:18.648Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:18.649Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-18T11:31:18.649Z"}
+{"level":"info","message":"Hugging Face provider initialized successfully (FREE!)","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:09.247Z"}
+{"level":"info","message":"AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:09.252Z"}
+{"level":"info","message":"🚀 COAZ Chatbot server running on port 8080","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:10.229Z"}
+{"level":"info","message":"📊 Environment: development","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:10.230Z"}
+{"level":"info","message":"🤖 AI Provider: huggingface","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:10.230Z"}
+{"level":"info","message":"🌐 CORS Origins: http://localhost:3000, https://coaz.org","service":"coaz-chatbot","timestamp":"2025-10-18T11:44:10.230Z"}
+{"level":"info","message":"Created new session: session_1760783817522_upqw88qhc","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:13:41.002Z"}
+{"level":"info","message":"Created new session: session_1760783817522_upqw88qhc","service":"coaz-simple-chatbot","timestamp":"2025-10-18T12:17:34.869Z"}
