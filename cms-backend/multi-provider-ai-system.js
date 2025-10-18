@@ -296,8 +296,6 @@ class MultiProviderAISystem {
     // Build optimized prompt for AI Horde using the specified format
     buildAIHordePrompt(query, context) {
 
-        console.log(`[COMPINED] ❌ ${context}`);
-
         return `You are a helpful assistant for the College of Anesthesiologists of Zambia (COAZ). 
         
         Context: ${context}
@@ -582,8 +580,85 @@ class MultiProviderAISystem {
             .replace(/<[^>]*>/g, '') // Remove HTML tags
             .trim();
         
+        // Remove unwanted training instructions and system prompts
+        cleanText = this.removeTrainingInstructions(cleanText);
+        
         // Apply formatting
         return this.formatResponse(cleanText);
+    }
+
+    // Remove training instructions and system prompts from AI responses
+    removeTrainingInstructions(text) {
+        if (!text) return text;
+        
+        let cleanedText = text;
+        
+        // Step 1: Remove the "Remember to keep your responses..." sections
+        cleanedText = cleanedText.replace(/Remember to keep your responses concise.*?Happy assisting!/gis, '');
+        
+        // Step 2: Remove parenthetical notes
+        cleanedText = cleanedText.replace(/\(Please note that.*?\)/gi, '');
+        
+        // Step 3: Remove everything from "---Please find the next task below:" onwards
+        cleanedText = cleanedText.replace(/---\s*Please find the next task below:.*$/gis, '');
+        
+        // Step 4: Remove everything from "Please find the next task below:" onwards (without ---)
+        cleanedText = cleanedText.replace(/Please find the next task below:.*$/gis, '');
+        
+        // Step 5: Remove Question/Answer training sections
+        cleanedText = cleanedText.replace(/---\s*Question:.*?Answer:.*?(?=---|\n\n|$)/gis, '');
+        
+        // Step 6: Remove standalone separator lines
+        cleanedText = cleanedText.replace(/^\s*---\s*$/gm, '');
+        
+        // Step 7: Extract only the first paragraph if response contains training artifacts
+        if (cleanedText.includes('Question:') || cleanedText.includes('Answer:') || cleanedText.includes('---')) {
+            // Split by double newlines and take the first meaningful paragraph
+            const paragraphs = text.split(/\n\s*\n/);
+            for (const paragraph of paragraphs) {
+                const cleaned = paragraph
+                    .replace(/Remember to keep your responses.*$/gi, '')
+                    .replace(/Please find the next task.*$/gi, '')
+                    .replace(/---.*$/gi, '')
+                    .replace(/\(Please note that.*?\)/gi, '')
+                    .trim();
+                
+                // Check if this paragraph looks like the actual answer
+                if (cleaned.length > 50 && 
+                    !cleaned.includes('Question:') && 
+                    !cleaned.includes('Answer:') &&
+                    !cleaned.includes('Remember to keep') &&
+                    !cleaned.includes('Happy assisting')) {
+                    return cleaned;
+                }
+            }
+        }
+        
+        // Step 8: Final cleanup
+        cleanedText = cleanedText
+            .replace(/\n\s*\n\s*\n/g, '\n\n') // Max 2 consecutive newlines
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .trim();
+        
+        // Step 9: Safety check - if we removed too much, return the first clean sentence
+        if (cleanedText.length < 20 && text.length > 100) {
+            // Find the first complete sentence that doesn't contain training instructions
+            const sentences = text.match(/[^.!?]*[.!?]/g) || [];
+            for (const sentence of sentences) {
+                const cleaned = sentence.trim();
+                if (cleaned.length > 20 && 
+                    !cleaned.includes('Remember to keep') &&
+                    !cleaned.includes('Question:') &&
+                    !cleaned.includes('Answer:')) {
+                    return cleaned;
+                }
+            }
+            
+            // Last resort
+            return "I apologize, but there was an issue processing the response. Please ask your question again.";
+        }
+        
+        return cleanedText;
     }
 
     // Format response with proper HTML formatting
