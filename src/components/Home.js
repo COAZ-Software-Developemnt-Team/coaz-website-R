@@ -447,41 +447,41 @@ const Benefit = ({img, bgColor, text}) => {
 }
 
 const News = () => {
-    const [timeLeft, setTimeLeft] = useState({
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0
-    });
+    // const [timeLeft, setTimeLeft] = useState({
+    //     days: 0,
+    //     hours: 0,
+    //     minutes: 0,
+    //     seconds: 0
+    // });
 
     // AGM Countdown Logic
-    useEffect(() => {
-        const calculateTimeLeft = () => {
-            const currentDate = new Date();
-            const agmDate = new Date(currentDate.getFullYear(), 9, 20); // October is month 9
-
-            // If AGM date has passed this year, use next year
-            if (agmDate < currentDate) {
-                agmDate.setFullYear(agmDate.getFullYear() + 1);
-            }
-
-            const difference = agmDate.getTime() - currentDate.getTime();
-
-            if (difference > 0) {
-                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-                setTimeLeft({days, hours, minutes, seconds});
-            }
-        };
-
-        calculateTimeLeft();
-        const timer = setInterval(calculateTimeLeft, 1000);
-
-        return () => clearInterval(timer);
-    }, []);
+    // useEffect(() => {
+    //     const calculateTimeLeft = () => {
+    //         const currentDate = new Date();
+    //         const agmDate = new Date(currentDate.getFullYear(), 9, 20); // October is month 9
+    //
+    //         // If AGM date has passed this year, use next year
+    //         if (agmDate < currentDate) {
+    //             agmDate.setFullYear(agmDate.getFullYear() + 1);
+    //         }
+    //
+    //         const difference = agmDate.getTime() - currentDate.getTime();
+    //
+    //         if (difference > 0) {
+    //             const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    //             const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    //             const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    //             const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+    //
+    //             setTimeLeft({days, hours, minutes, seconds});
+    //         }
+    //     };
+    //
+    //     calculateTimeLeft();
+    //     const timer = setInterval(calculateTimeLeft, 1000);
+    //
+    //     return () => clearInterval(timer);
+    // }, []);
 
     const latestNews = [];
     let sortedNews = news.sort((day1, day2) => (day1.date < day2.date) ? 1 : (day1.date > day2.date) ? -1 : 0);
@@ -499,41 +499,39 @@ const News = () => {
             className='relative flex flex-col w-full h-fit px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%] space-y-12 font-nunito'>
             <div className='flex flex-col w-full items-center space-y-6'>
                 <p className='text-heading text-center text-[34px] font-bold'>
-                    Our Latest News : Annual General Meeting
+                    Our Latest News
                 </p>
             </div>
-            <div
-                className='relative flex flex-col w-full h-fit px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%] space-y-12 font-nunito'>
-                <div className='flex flex-col w-full items-center space-y-6'>
-                    <p className='text-heading text-center text-[34px] font-bold'>
-                        AGM COUNTDOWN!
-                    </p>
-                    <div className="flex space-x-4 text-xl font-bold">
-                        <div className="bg-blue-100 px-3 py-2 rounded-md">
-                            <span>{timeLeft.days}</span>
-                            <span className="block text-sm">Days</span>
-                        </div>
-                        <div className="bg-green-100 px-3 py-2 rounded-md">
-                            <span>{timeLeft.hours}</span>
-                            <span className="block text-sm">Hours</span>
-                        </div>
-                        <div className="bg-yellow-100 px-3 py-2 rounded-md">
-                            <span>{timeLeft.minutes}</span>
-                            <span className="block text-sm">Minutes</span>
-                        </div>
-                        <div className="bg-red-100 px-3 py-2 rounded-md">
-                            <span>{timeLeft.seconds}</span>
-                            <span className="block text-sm">Seconds</span>
-                        </div>
-                    </div>
+            {/*<div*/}
+            {/*    className='relative flex flex-col w-full h-fit px-4 xs:px-[8%] sm:px-[13%] md:px-[5%] xl:px-[13%] space-y-12 font-nunito'>*/}
+            {/*    <div className='flex flex-col w-full items-center space-y-6'>*/}
+            {/*        <p className='text-heading text-center text-[34px] font-bold'>*/}
+            {/*            AGM COUNTDOWN!*/}
+            {/*        </p>*/}
+            {/*        <div className="flex space-x-4 text-xl font-bold">*/}
+            {/*            <div className="bg-blue-100 px-3 py-2 rounded-md">*/}
+            {/*                <span>{timeLeft.days}</span>*/}
+            {/*                <span className="block text-sm">Days</span>*/}
+            {/*            </div>*/}
+            {/*            <div className="bg-green-100 px-3 py-2 rounded-md">*/}
+            {/*                <span>{timeLeft.hours}</span>*/}
+            {/*                <span className="block text-sm">Hours</span>*/}
+            {/*            </div>*/}
+            {/*            <div className="bg-yellow-100 px-3 py-2 rounded-md">*/}
+            {/*                <span>{timeLeft.minutes}</span>*/}
+            {/*                <span className="block text-sm">Minutes</span>*/}
+            {/*            </div>*/}
+            {/*            <div className="bg-red-100 px-3 py-2 rounded-md">*/}
+            {/*                <span>{timeLeft.seconds}</span>*/}
+            {/*                <span className="block text-sm">Seconds</span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
                         {latestNews.map((newsItem, index) => (
                             <NewsItem key={index} newsItem={newsItem}/>
                         ))}
                     </div>
-                </div>
             </div>
-        </div>
     );
 };
 
