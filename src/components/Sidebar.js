@@ -1,6 +1,6 @@
-import React, { useContext } from "react";
-import { UserContext } from "../contexts/UserContext";
-import { FaTimes } from "react-icons/fa";
+import React, {useContext} from "react";
+import {UserContext} from "../contexts/UserContext";
+import {FaTimes} from "react-icons/fa";
 
 const Sidebar = () => {
     const { user, logout, mode, setMode, sidebarOpen, setSidebarOpen } = useContext(UserContext);

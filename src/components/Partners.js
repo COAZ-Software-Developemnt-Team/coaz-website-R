@@ -1,5 +1,5 @@
-import React,{useEffect,useState,useRef} from 'react'
-import { partners } from '../data';
+import React, {useEffect, useRef, useState} from 'react'
+import {partners} from '../data';
 
 const Partners = () => {
     const [columns,setColumns] = useState(partners? partners.length:0);

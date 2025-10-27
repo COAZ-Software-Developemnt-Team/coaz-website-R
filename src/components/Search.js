@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaMagnifyingGlass } from 'react-icons/fa6';
+import {FaMagnifyingGlass} from 'react-icons/fa6';
 
 const Search = () => {
     return (

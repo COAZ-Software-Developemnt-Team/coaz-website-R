@@ -1,3 +1,42 @@
+## COAZ.org RAG Scraper + Chat
+
+### Setup
+
+1. Copy `.env.example` to `.env` and fill `OPENAI_API_KEY`.
+2. Install deps: `npm install` (already done).
+
+### Commands
+
+Add these to `package.json` scripts:
+
+```
+"scrape": "node src/scrape.js",
+"embed": "node src/embed.js",
+"chat": "node src/chat.js"
+```
+
+### Usage
+
+1. Scrape site pages into JSONL:
+
+```
+npm run scrape
+```
+
+2. Build embeddings index:
+
+```
+npm run embed
+```
+
+3. Ask a question (with optional fallback document):
+
+```
+npm run chat -- -q "What is COAZ about?" --fallback path/to/notes.txt
+```
+
+The chatbot prioritizes website content; if insufficient, it may use the fallback document.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

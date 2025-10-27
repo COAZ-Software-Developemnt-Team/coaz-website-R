@@ -1,6 +1,6 @@
 // src/components/Login.js
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {useState} from "react";
+import {useNavigate} from "react-router-dom";
 
 const Login = ({ setIsLoggedIn }) => {
     const [password, setPassword] = useState("");

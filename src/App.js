@@ -1,11 +1,11 @@
-import {Routes, Route,Router,Navigate} from 'react-router-dom';
-import React, {useState, useEffect} from 'react';
+import {Route, Routes} from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 import './index.css'
 import axios from "axios";
 import {GlobalContext} from './contexts/GlobalContext';
-import { UserProvider } from "./contexts/UserContext";
-import {organisation, membership} from './data';
+import {UserProvider} from "./contexts/UserContext";
+import {membership, organisation} from './data';
 import Home from './components/Home';
 import Main from './components/Main';
 import ProfessionalCategories from './components/ProfessionalCategories';
@@ -21,8 +21,6 @@ import CPD from './components/CPD';
 import Development from "./components/Development";
 import Form from "./components/Form";
 import ChatBot from './components/ChatBot'; // Import ChatBot component
-
-
 
 
 // axios.defaults.baseURL = 'http://localhost:8080/api/';

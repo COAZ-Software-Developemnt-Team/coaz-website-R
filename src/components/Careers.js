@@ -1,7 +1,7 @@
-import React,{useState,useEffect} from 'react'
+import React, {useEffect, useState} from 'react'
 /* import {CIJob} from "../CoazIcons" */
-import { FaRegCircle, FaRegDotCircle  } from "react-icons/fa";
-import { LiaAngleUpSolid,LiaAngleDownSolid } from "react-icons/lia";
+import {FaRegCircle, FaRegDotCircle} from "react-icons/fa";
+import {LiaAngleDownSolid, LiaAngleUpSolid} from "react-icons/lia";
 
 const Careers = () => {
   const [countryFilter, setCountryFilter] = useState({property:'country',values:[]});

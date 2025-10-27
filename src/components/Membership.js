@@ -1,6 +1,6 @@
-import React, {useEffect,useState,useContext} from 'react'
-import { GlobalContext } from '../contexts/GlobalContext';
-import { useNavigate,useLocation } from 'react-router-dom';
+import React, {useContext, useEffect, useState} from 'react'
+import {GlobalContext} from '../contexts/GlobalContext';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {membership} from '../data'
 
 const Membership = () => {

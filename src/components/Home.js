@@ -2,24 +2,23 @@
 import MainSlide from './MainSlide';
 import React, {useEffect, useRef, useState} from 'react';
 import {
+    CIAnalysis,
     CICollaboration,
     CIHandShake,
-    CISearchEngine,
-    CIAnalysis,
-    CIPortal,
     CIMedicalInsurance,
-    CITrophy,
-    CISuccess,
+    CIPortal,
+    CIResources,
     CISearch,
-    CIResources
+    CISearchEngine,
+    CISuccess,
+    CITrophy
 } from './CoazIcons';
 import Button from '../components/Button'
 import {MdSubdirectoryArrowRight} from 'react-icons/md';
 import {news} from '../data'
 import {IoIosArrowRoundForward} from 'react-icons/io';
 import ChatBot from '../components/ChatBot';
-import { Link } from "react-router-dom";
-import Careers from '../components/Careers';
+import {Link} from "react-router-dom";
 
 const scrollCallbacks = [];
 

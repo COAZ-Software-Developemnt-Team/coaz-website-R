@@ -1,7 +1,6 @@
-import React, {useContext, useState} from 'react';
-import { useNavigate } from 'react-router-dom';
-import { UserContext } from "../contexts/UserContext";
-import { useData } from './UseData';
+import React, {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {useData} from './UseData';
 
 
 const LoginPage = () => {

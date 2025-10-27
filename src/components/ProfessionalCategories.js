@@ -1,6 +1,6 @@
-import React, {useEffect,useState,useRef,useContext} from 'react'
-import { GlobalContext } from '../contexts/GlobalContext';
-import { useNavigate,useLocation } from 'react-router-dom';
+import React, {useContext, useEffect, useRef, useState} from 'react'
+import {GlobalContext} from '../contexts/GlobalContext';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {professionalCategories} from '../data'
 
 const ProfessionalCategories = () => {

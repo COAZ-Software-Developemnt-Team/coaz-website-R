@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@huggingface/inference": "^4.11.2",
+    "@xenova/transformers": "^2.17.2",
     "body-parser": "^2.2.0",
     "cheerio": "^1.1.2",
     "compression": "^1.8.1",
@@ -22,10 +23,12 @@
     "express-validator": "^7.2.1",
     "fuse.js": "^7.1.0",
     "helmet": "^8.1.0",
+    "jsdom": "^27.0.0",
     "mysql2": "^3.15.0",
     "openai": "^6.3.0",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.4.149",
+    "puppeteer": "^24.25.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {

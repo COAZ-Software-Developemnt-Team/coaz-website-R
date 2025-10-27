@@ -1,8 +1,8 @@
-import React, {useState,useEffect,useContext,useRef} from 'react'
-import { useNavigate,useLocation} from 'react-router-dom';
-import { GlobalContext } from '../contexts/GlobalContext';
-import { organisation,findPerson } from '../data'
-import { FaRegCircleDot } from "react-icons/fa6";
+import React, {useContext, useEffect, useRef, useState} from 'react'
+import {useLocation, useNavigate} from 'react-router-dom';
+import {GlobalContext} from '../contexts/GlobalContext';
+import {findPerson, organisation} from '../data'
+import {FaRegCircleDot} from "react-icons/fa6";
 import Person from './Person'
 
 const Organisation = () => {

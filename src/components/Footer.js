@@ -1,12 +1,11 @@
 // Footer.js
 import React from "react";
-import { Logo } from "./CoazIcons";
-import { MdEmail } from "react-icons/md";
-import { IoLogoWhatsapp } from "react-icons/io";
-import { FaFacebook } from "react-icons/fa6";
-import { GiMailbox } from "react-icons/gi";
-import { FaLocationDot, FaClock } from "react-icons/fa6";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import {Logo} from "./CoazIcons";
+import {MdEmail} from "react-icons/md";
+import {IoLogoWhatsapp} from "react-icons/io";
+import {FaClock, FaFacebook, FaLocationDot} from "react-icons/fa6";
+import {GiMailbox} from "react-icons/gi";
+import {FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter} from "react-icons/fa";
 
 const Footer = () => {
   return (

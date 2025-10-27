@@ -1,7 +1,6 @@
 import React from "react";
-import Banner from "../components/Banner";
 import ReadMoreSection from "./ReadMore";
-import { GoDotFill } from "react-icons/go";
+import {GoDotFill} from "react-icons/go";
 
 const CPD = () => {
     return (

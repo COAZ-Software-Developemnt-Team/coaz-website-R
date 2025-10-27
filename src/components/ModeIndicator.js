@@ -1,6 +1,6 @@
-import React, { useContext } from "react";
-import { UserContext } from "../contexts/UserContext";
-import { FaEye, FaEdit } from "react-icons/fa";
+import React, {useContext} from "react";
+import {UserContext} from "../contexts/UserContext";
+import {FaEdit, FaEye} from "react-icons/fa";
 
 const ModeIndicator = () => {
     const { user, mode, setMode } = useContext(UserContext);

@@ -1,5 +1,16 @@
-import React, { useState, useRef, useEffect } from "react";
-import { FaRobot, FaTimes, FaPaperPlane, FaCopy, FaExpand, FaCompress, FaTrash, FaCog, FaBrain, FaSearch } from "react-icons/fa";
+import React, {useEffect, useRef, useState} from "react";
+import {
+    FaBrain,
+    FaCog,
+    FaCompress,
+    FaCopy,
+    FaExpand,
+    FaPaperPlane,
+    FaRobot,
+    FaSearch,
+    FaTimes,
+    FaTrash
+} from "react-icons/fa";
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ||
@@ -9,7 +20,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ||
 
 export const sendQuery = async (input, sessionId = null, useRag = true) => {
     try {
-        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 30000;
+        const timeout = parseInt(process.env.REACT_APP_API_TIMEOUT) || 600000; // 10 minutes default
         
         const response = await axios.post(
             `${API_BASE_URL}/api/chat`,
@@ -34,6 +45,8 @@ const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isReady, setIsReady] = useState(false);
+    const [serverStatus, setServerStatus] = useState('checking'); // 'checking', 'ready', 'offline'
+    const [failedMessage, setFailedMessage] = useState(null); // Store failed message for retry
     const [messages, setMessages] = useState([
         { 
             id: 1,
@@ -52,12 +65,57 @@ const ChatBot = () => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    // Initialize chatbot readiness after a short delay
+    // Retry failed message
+    const retryFailedMessage = async () => {
+        if (!failedMessage) return;
+
+        console.log('Retrying failed message:', failedMessage.text);
+        setFailedMessage(null); // Clear failed message
+        await handleSend(failedMessage.text, failedMessage.sessionId, failedMessage.useRag);
+    };
+
+    // Check server health and readiness
+    const checkServerHealth = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/api/health`, {
+                timeout: 5000 // 5 second timeout for health check
+            });
+            
+            if (response.status === 200 && response.data.status === 'healthy') {
+                setServerStatus('ready');
+                setIsReady(true);
+                if (process.env.REACT_APP_ENABLE_CONSOLE_LOGS !== 'false') {
+                    console.log('[ChatBot] Server is ready and healthy');
+                }
+            } else {
+                setServerStatus('offline');
+                setIsReady(false);
+            }
+        } catch (error) {
+            setServerStatus('offline');
+            setIsReady(false);
+            if (process.env.REACT_APP_ENABLE_CONSOLE_LOGS !== 'false') {
+                console.log('[ChatBot] Server health check failed:', error.message);
+            }
+        }
+    };
+
+    // Initialize server health check
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsReady(true);
+        // Initial check after a short delay to allow page to load
+        const initialTimer = setTimeout(() => {
+            checkServerHealth();
         }, 1000);
-        return () => clearTimeout(timer);
+
+        // Periodic health checks every 30 seconds
+        const healthCheckInterval = setInterval(() => {
+            checkServerHealth();
+        }, 30000);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(healthCheckInterval);
+        };
     }, []);
 
     // Quick action suggestions tailored for COAZ
@@ -147,6 +205,18 @@ const ChatBot = () => {
 
     const handleSend = async (message = input) => {
         if (!message.trim()) return;
+        
+        // Check server status before sending
+        if (serverStatus !== 'ready') {
+            const offlineMessage = {
+                id: Date.now(),
+                sender: "bot",
+                text: "❌ Server is currently offline. Please wait for the server to come back online or try refreshing the page.",
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, offlineMessage]);
+            return;
+        }
 
         const userMessage = {
             id: Date.now(),
@@ -170,22 +240,69 @@ const ChatBot = () => {
             const response = await sendQuery(message, sessionId, useRag);
             console.log("Chatbot API response:", response);
 
-            const botMessage = {
-                id: Date.now() + 1,
-                sender: "bot",
-                text: response.text || response.answer || "I couldn't find relevant info in the constitution.",
-                timestamp: new Date(),
-                responseType: response.responseType,
-                ragMetadata: response.ragMetadata
-            };
+            // Check if response contains an error message from sendQuery
+            const isServerError = response.answer && (
+                response.answer.includes("Sorry, I couldn't reach the server") ||
+                response.answer.includes("couldn't reach the server") ||
+                response.answer === (process.env.REACT_APP_CHATBOT_ERROR_MESSAGE || "Sorry, I couldn't reach the server.")
+            );
 
-            setMessages(prev => [...prev, botMessage]);
+            if (isServerError) {
+                // Store the failed message for retry
+                setFailedMessage({
+                    text: message,
+                    sessionId: sessionId,
+                    useRag: useRag,
+                    timestamp: new Date()
+                });
+
+                const errorMessage = {
+                    id: Date.now() + 1,
+                    sender: "bot",
+                    text: "❌ " + response.answer,
+                    timestamp: new Date(),
+                    isError: true,
+                    showRetry: true
+                };
+                setMessages(prev => [...prev, errorMessage]);
+            } else {
+                // Normal successful response
+                const botMessage = {
+                    id: Date.now() + 1,
+                    sender: "bot",
+                    text: response.text || response.answer || "I couldn't find relevant info in the constitution.",
+                    timestamp: new Date(),
+                    responseType: response.responseType,
+                    ragMetadata: response.ragMetadata,
+                    metadata: response.metadata // Include model and provider info
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+                
+                // Clear failed message on successful response
+                setFailedMessage(null);
+            }
         } catch (err) {
+            // Store the failed message for retry
+            setFailedMessage({
+                text: message,
+                sessionId: sessionId,
+                useRag: useRag,
+                timestamp: new Date()
+            });
+
+            const isTimeoutError = err.code === 'ECONNABORTED' || err.message.includes('timeout');
+            const errorText = isTimeoutError 
+                ? "⏰ Request timed out. The server is taking longer than expected to respond."
+                : `❌ ${err.response?.data?.message || err.message || 'Sorry, I couldn\'t reach the server.'}`;
+
             const errorMessage = {
                 id: Date.now() + 1,
                 sender: "bot",
-                text: `❌ Error: ${err.message}`,
-                timestamp: new Date()
+                text: errorText,
+                timestamp: new Date(),
+                isError: true,
+                showRetry: true
             };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
@@ -257,9 +374,19 @@ const ChatBot = () => {
             >
                 {isOpen ? <FaTimes size={20} /> : <FaRobot size={24} />}
                 
-                {/* Ready indicator */}
-                {isReady && !isOpen && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                {/* Server status indicator */}
+                {!isOpen && (
+                    <>
+                        {serverStatus === 'ready' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" title="Server is ready"></div>
+                        )}
+                        {serverStatus === 'checking' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse" title="Checking server status..."></div>
+                        )}
+                        {serverStatus === 'offline' && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" title="Server is offline"></div>
+                        )}
+                    </>
                 )}
             </button>
 
@@ -277,11 +404,22 @@ const ChatBot = () => {
                             <div>
                                 <span className="font-bold">AI Assistant</span>
                                 <div className="text-xs opacity-75">
-                                    {useRag ? "RAG Mode" : "Search Mode"}
+                                    {serverStatus === 'ready' && (useRag ? "RAG Mode" : "Search Mode")}
+                                    {serverStatus === 'checking' && "Connecting..."}
+                                    {serverStatus === 'offline' && "Server Offline"}
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                            {serverStatus === 'offline' && (
+                                <button
+                                    onClick={checkServerHealth}
+                                    className="hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors text-xs px-2 py-1"
+                                    title="Retry connection"
+                                >
+                                    Retry
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowSettings(!showSettings)}
                                 className="hover:bg-white hover:bg-opacity-20 p-1 rounded transition-colors"
@@ -386,6 +524,24 @@ const ChatBot = () => {
                                             </div>
                                         )}
                                         
+                                        {/* Subtle Model Indicator */}
+                                        {msg.sender === 'bot' && msg.metadata && (
+                                            <div className="mt-2 text-xs text-gray-400 opacity-60 hover:opacity-100 transition-opacity flex items-center justify-between">
+                                                <div className="flex items-center space-x-1">
+                                                    <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                                                    <span className="font-mono text-[10px]">
+                                                        {msg.metadata.provider === 'ai_horde' ? 'AI Horde' : msg.metadata.provider}
+                                                        {msg.metadata.model && ` • ${msg.metadata.model}`}
+                                                    </span>
+                                                </div>
+                                                {msg.metadata.processingTime && (
+                                                    <span className="text-[10px] font-mono opacity-50">
+                                                        {msg.metadata.processingTime}ms
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        
                                         {/* Response Type Indicator */}
                                         {msg.responseType && msg.sender === 'bot' && (
                                             <div className="mt-1 text-xs text-gray-400">
@@ -439,21 +595,36 @@ const ChatBot = () => {
                                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-400 rounded-lg rounded-bl-sm px-4 py-3 shadow-md max-w-xs">
                                     <div className="flex items-center space-x-3">
                                         <div className="flex space-x-1">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0s'
+                                            }}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0.16s'
+                                            }}></div>
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full" style={{
+                                                animation: isLoading ? 'thinking-dots 1.4s infinite ease-in-out' : 'bounce 1s infinite',
+                                                animationDelay: '0.32s'
+                                            }}></div>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-blue-800">
-                                                {isLoading ? 'COAZ Assistant is thinking...' : 'Preparing response...'}
+                                                {isLoading ? 'COAZ Assistant is thinking' : 'Preparing response...'}
+                                                {isLoading && <span className="animate-pulse">...</span>}
                                             </span>
                                             <span className="text-xs text-blue-600">
-                                                {isLoading ? 'Searching knowledge base & website content' : 'Formatting information for you'}
+                                                {isLoading ? 'Processing your request, please wait ...' : 'Formatting information for you'}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="mt-2 w-full bg-blue-200 rounded-full h-1">
-                                        <div className="bg-blue-500 h-1 rounded-full animate-pulse transition-all duration-1000" style={{width: isLoading ? '60%' : '90%'}}></div>
+                                    <div className="mt-2 w-full bg-blue-200 rounded-full h-1 overflow-hidden">
+                                        <div className={`bg-blue-500 h-1 rounded-full transition-all duration-1000 ${
+                                            isLoading ? 'animate-pulse' : ''
+                                        }`} style={{
+                                            width: isLoading ? '60%' : '90%',
+                                            animation: isLoading ? 'loading-bar 3s infinite ease-in-out' : undefined
+                                        }}></div>
                                     </div>
                                 </div>
                             </div>
@@ -468,7 +639,13 @@ const ChatBot = () => {
                             ref={inputRef}
                             type="text"
                             className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[rgb(0,175,240)] focus:border-transparent transition-all"
-                            placeholder={process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about COAZ..."}
+                            placeholder={
+                                serverStatus === 'ready' 
+                                    ? (process.env.REACT_APP_CHATBOT_PLACEHOLDER || "Ask me about COAZ...")
+                                    : serverStatus === 'checking'
+                                    ? "Connecting to server..."
+                                    : "Server is offline"
+                            }
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -486,12 +663,12 @@ const ChatBot = () => {
                                     }
                                 }, 10);
                             }}
-                            disabled={isLoading}
+                            disabled={isLoading || serverStatus !== 'ready'}
                             autoFocus={isOpen}
                         />
                         <button
                             onClick={() => handleSend()}
-                            disabled={isLoading || !input.trim()}
+                            disabled={isLoading || !input.trim() || serverStatus !== 'ready'}
                             className="ml-3 bg-[rgb(0,175,240)] text-white p-2 rounded-full hover:bg-[rgb(0,155,220)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105"
                         >
                             <FaPaperPlane size={16} />

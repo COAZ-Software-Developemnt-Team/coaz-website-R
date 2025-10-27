@@ -1,9 +1,6 @@
 import React from "react";
 import {Link} from "react-router-dom";
 import {GoDotFill} from "react-icons/go";
-import {GiTargetArrows} from "react-icons/gi";
-import {FaRegEye} from "react-icons/fa";
-import {LuHeartHandshake} from "react-icons/lu";
 
 const Objective = () => {
     return (
