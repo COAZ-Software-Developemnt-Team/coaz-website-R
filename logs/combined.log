@@ -32,6 +32,5 @@
 {"level":"info","message":"Created new session: session_1760830969245_42isw4x3m","service":"coaz-simple-chatbot","timestamp":"2025-10-18T23:43:53.183Z"}
 {"level":"info","message":"Created new session: session_1760831227585_s3slyz3vt","service":"coaz-simple-chatbot","timestamp":"2025-10-18T23:48:43.128Z"}
 {"level":"info","message":"Created new session: session_1760831365303_uo74mxq8l","service":"coaz-simple-chatbot","timestamp":"2025-10-18T23:49:34.731Z"}
-{"level":"info","message":"Created new session: session_1761561634512_canlv626g","service":"coaz-simple-chatbot","timestamp":"2025-10-27T10:42:14.166Z"}
-{"level":"info","message":"Created new session: session_1761559542209_ociu8mxid","service":"coaz-simple-chatbot","timestamp":"2025-10-27T11:20:47.380Z"}
-{"level":"info","message":"Session expired and cleaned up: session_1761561634512_canlv626g","service":"coaz-simple-chatbot","timestamp":"2025-10-27T11:52:01.958Z"}
+{"level":"info","message":"Created new session: session_1761561422143_hppmodd0z","service":"coaz-simple-chatbot","timestamp":"2025-10-27T10:41:10.978Z"}
+{"level":"info","message":"Session expired and cleaned up: session_1761561422143_hppmodd0z","service":"coaz-simple-chatbot","timestamp":"2025-10-27T11:41:55.318Z"}

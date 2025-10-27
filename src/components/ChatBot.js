@@ -572,7 +572,7 @@ const ChatBot = () => {
                         ))}
                         
                         {/* Quick Actions */}
-                        {process.env.REACT_APP_ENABLE_QUICK_ACTIONS !== 'false' && showQuickActions && messages.length <= 1 && !isLoading && (
+                        {process.env.REACT_APP_ENABLE_QUICK_ACTIONS !== 'false' && process.env.REACT_APP_ENABLE_QUICK_QUESTIONS !== 'false' && showQuickActions && messages.length <= 1 && !isLoading && (
                             <div className="space-y-2">
                                 <div className="text-xs text-gray-500 text-center">Quick questions:</div>
                                 <div className="grid grid-cols-1 gap-2">
